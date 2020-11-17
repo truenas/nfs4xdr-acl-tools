@@ -1,0 +1,58 @@
+.\" NFSv4 Access Control Lists manual pages
+.\" format with: groff -man -Tascii foo.1
+.\" 
+.\" http://www.delorie.com/gnu/docs/groff/groff_37.html
+.\" http://www.schweikhardt.net/man_page_howto.html
+.\" 
+.TH NFS4_GETFACL 1 "version 0.3.3, August 2008" "Linux" "NFSv4 Access Control Lists"
+.SH NAME
+nfs4_getfacl \- get NFSv4 file/directory access control lists
+.SH SYNOPSIS
+.B nfs4_getfacl [-H]
+.I file
+.SH DESCRIPTION
+.B nfs4_getfacl 
+will display the NFSv4 Access Control List (ACL) for 
+.I file 
+(a file or directory), provided 
+.I file 
+is on a mounted NFSv4 filesystem which supports ACLs.
+
+If the 
+.BR -H / --more-help
+flag is specified, 
+.B nfs4_getfacl
+will print some information about NFSv4 ACLs and the fields used in ACEs.  
+
+The output format for an NFSv4 file ACL, e.g., is:
+.RS
+.nf
+
+A::OWNER@:rwatTnNcCy
+A::alice@nfsdomain.org:rxtncy
+A::bob@nfsdomain.org:rwadtTnNcCy
+A:g:GROUP@:rtncy
+D:g:GROUP@:waxTC
+A::EVERYONE@:rtncy
+D::EVERYONE@:waxTC
+.fi
+.RE
+
+In the example output above, the user `alice@nfsdomain.org' has the equivalent
+of "read" and "execute" permissions, `bob@nfsdomain.org' has "read" and 
+"write", and both `GROUP@' and `EVERYONE@' have "read".
+
+Refer to the 
+.BR nfs4_acl (5)
+manpage for detailed information about NFSv4 ACL terminology and syntax. 
+.SH AUTHORS
+.B nfs4_getfacl
+was written by people at CITI, the Center for Information Technology Integration
+.RI ( http://www.citi.umich.edu ).
+This manpage was written by David Richter.
+.SH CONTACT
+Please send bug reports, feature requests, and comments to
+.RI < nfsv4@linux-nfs.org >.
+.SH SEE ALSO
+.BR nfs4_setfacl "(1), " nfs4_acl (5),
+.IR RFC3530 " (NFSv4.0), NFSv4.1 Minor Version Draft."

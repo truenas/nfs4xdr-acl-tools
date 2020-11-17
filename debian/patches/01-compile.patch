@@ -1,0 +1,90 @@
+Index: nfs4-acl-tools-0.3.3/configure.ac
+===================================================================
+--- nfs4-acl-tools-0.3.3.orig/configure.ac
++++ nfs4-acl-tools-0.3.3/configure.ac
+@@ -32,5 +32,6 @@ AC_PACKAGE_NEED_GETXATTR_LIBATTR
+ AC_MANUAL_FORMAT
+ 
+ AC_FUNC_GCC_VISIBILITY
++AC_DEFINE(HAVE_VISIBILITY_ATTRIBUTE, [], [GCC supports visibility attributes])
+ 
+ AC_OUTPUT(include/builddefs)
+Index: nfs4-acl-tools-0.3.3/include/buildmacros
+===================================================================
+--- nfs4-acl-tools-0.3.3.orig/include/buildmacros
++++ nfs4-acl-tools-0.3.3/include/buildmacros
+@@ -54,7 +54,7 @@ OBJECTS = $(ASFILES:.s=.o) \
+ 	  $(LFILES:.l=.o) \
+ 	  $(YFILES:%.y=%.tab.o)
+ 
+-INSTALL	= $(TOPDIR)/install-sh -o $(PKG_USER) -g $(PKG_GROUP)
++INSTALL	= $(TOPDIR)/install-sh
+ 
+ SHELL = /bin/sh
+ IMAGES_DIR = $(TOPDIR)/all-images
+Index: nfs4-acl-tools-0.3.3/Makefile
+===================================================================
+--- nfs4-acl-tools-0.3.3.orig/Makefile
++++ nfs4-acl-tools-0.3.3/Makefile
+@@ -46,7 +46,7 @@ LDIRT = config.log .dep config.status co
+ 
+ SUBDIRS = include libnfs4acl nfs4_getfacl nfs4_setfacl man
+ 
+-default: $(CONFIGURE)
++default:
+ ifeq ($(HAVE_BUILDDEFS), no)
+ 	$(MAKE) -C . $@
+ else
+Index: nfs4-acl-tools-0.3.3/include/builddefs
+===================================================================
+--- nfs4-acl-tools-0.3.3.orig/include/builddefs
++++ nfs4-acl-tools-0.3.3/include/builddefs
+@@ -42,7 +42,7 @@ MALLOCLIB =
+ LIBNFS4ACL = $(TOPDIR)/libnfs4acl/libnfs4acl.la
+ LIBATTR = -lattr
+ 
+-prefix = /usr/local
++prefix = /usr
+ exec_prefix = ${prefix}
+ 
+ DESTDIR =
+@@ -51,7 +51,7 @@ PKG_NAME	= nfs4acl
+ PKG_USER	= root
+ PKG_GROUP	= root
+ PKG_RELEASE	= 0
+-PKG_VERSION	= 0.3.2
++PKG_VERSION	= 0.3.3
+ PKG_PLATFORM	= linux
+ PKG_DISTRIBUTION= Linux
+ PKG_BIN_DIR	= ${exec_prefix}/bin
+@@ -59,24 +59,24 @@ PKG_SBIN_DIR	= ${exec_prefix}/sbin
+ PKG_LIB_DIR	= ${exec_prefix}/lib
+ PKG_DEVLIB_DIR	= ${exec_prefix}/libexec
+ PKG_INC_DIR	= ${prefix}/include
+-PKG_MAN_DIR	= ${prefix}/man
++PKG_MAN_DIR	= ${prefix}/share/man
+ PKG_DOC_DIR	= ${prefix}/share/doc/nfs4acl
+ PKG_LOCALE_DIR	= ${prefix}/share/locale
+ 
+ CC		= gcc
+-AWK		= /bin/awk
++AWK		= /usr/bin/awk
+ SED		= /bin/sed
+ TAR		= /bin/tar
+ ZIP		= /bin/gzip
+-MAKE		= /usr/bin/gmake
++MAKE		= /usr/bin/make
+ ECHO		= /bin/echo
+-SORT		= /bin/sort
++SORT		= /usr/bin/sort
+ LN_S		= ln -s
+ LIBTOOL		= /usr/bin/libtool
+-MAKEDEPEND	= /usr/bin/makedepend
++MAKEDEPEND	= /bin/true
+ 
+ ENABLE_SHARED = no
+-HAVE_ZIPPED_MANPAGES = false
++HAVE_ZIPPED_MANPAGES = true
+ 
+ ifneq "$(findstring $(PKG_PLATFORM), linux gnu gnu/kfreebsd gnu/knetbsd)" ""
+ PCFLAGS = -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64

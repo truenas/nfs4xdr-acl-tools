@@ -1,0 +1,5 @@
+This package contains commandline and GUI ACL utilities for the Linux
+NFSv4 client.
+
+Copyright UM Regents 2006; see COPYING for license.
+See INSTALL for instructions.

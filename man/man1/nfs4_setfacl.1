@@ -1,0 +1,226 @@
+.\" NFSv4 Access Control Lists manual pages
+.\" format with: groff -man -Tascii foo.1
+.\" richterd
+.\".fam T
+.\"
+.TH NFS4_SETFACL 1 "version 0.3.3, August 2008" "Linux" "NFSv4 Access Control Lists"
+.SH NAME
+nfs4_setfacl, nfs4_editfacl \- manipulate NFSv4 file/directory access control lists
+.SH SYNOPSIS
+.ns
+.BR nfs4_setfacl  " [OPTIONS] COMMAND "
+.IR file ...
+.br
+.BR nfs4_editfacl  " [OPTIONS] "
+.IR file ...
+.SH DESCRIPTION
+.B nfs4_setfacl 
+manipulates the NFSv4 Access Control List (ACL) of one or more 
+.I files 
+(or directories), provided they are on a mounted NFSv4 filesystem
+which supports ACLs. 
+
+.B nfs4_editfacl 
+is equivalent to 
+.BR "nfs4_setfacl -e" .
+.\".B nfs4_setfacl -e
+
+Refer to the
+.BR nfs4_acl (5)
+manpage for information about NFSv4 ACL terminology and syntax.
+.SS COMMANDS
+.TP
+.BR "-a " "\fIacl_spec\fP [\fIindex\fP]"
+.RI "add the ACEs from " acl_spec " to " file "'s ACL."
+ACEs are inserted starting at the
+.IR index th
+position (DEFAULT: 1) of
+.IR file "'s ACL."
+.\".ns
+.TP
+.BR "-A " "\fIacl_file\fP [\fIindex\fP]"
+.RI "add the ACEs from the acl_spec in " acl_file " to " file "'s ACL."
+ACEs are inserted starting at the
+.IR index th
+position (DEFAULT: 1) of
+.IR file "'s ACL."
+.TP
+.BI "-x " "acl_spec \fR|\fP index"
+delete ACEs matched from
+.I acl_spec
+- or delete the 
+.IR index th
+ACE - from 
+.IR file 's
+ACL.  Note that the ordering of the ACEs in
+.I acl_spec
+does not matter.
+.TP
+.BI "-X " acl_file
+delete ACEs matched from the acl_spec in
+.IR acl_file " from " file "'s ACL."
+Note that the ordering of the ACEs in the acl_spec does not matter.
+.TP
+.BI "-s " acl_spec
+.RI "set " file "'s ACL to " acl_spec .
+.TP
+.BI "-S " acl_file
+.RI "set " file "'s ACL to the acl_spec in " acl_file .
+.TP
+.BR "-e" , " --edit"
+.RI "edit " file "'s ACL in the editor defined in the EDITOR environment variable (DEFAULT: "
+.BR vi "(1)) and set the resulting ACL upon a clean exit, assuming changes made in the editor
+were saved.  Note that if multiple
+.IR files " are specified, the editor will be serially invoked once per " file .
+.TP
+.BI "-m " "from_ace to_ace"
+.RI "modify " file "'s ACL in-place by replacing " from_ace " with " to_ace .
+.TP
+.BR "-?" ", " "-h" ", " "--help"
+display help text and exit.
+.TP
+.B "--version"
+display this program's version and exit.
+.P
+.RI "NOTE: if '-' is given as the " acl_file 
+.ns
+.RB "with the " -A / -X / -S " flags, the acl_spec will be read from stdin."
+.SS OPTIONS
+.TP
+.BR "-R" , " --recursive"
+recursively apply to a directory's files and subdirectories.  Similar to 
+.BR setfacl (1),
+the default behavior is to follow symlinks given on the command line and to skip symlinks
+encountered while recursing through directories.
+.TP
+.BR "-L" , " --logical"
+in conjunction with
+.BR -R / --recursive ", a logical walk follows all symbolic links."
+.TP
+.BR "-P" , " --physical"
+in conjunction with
+.BR -R / --recursive ", a physical walk skips all symbolic links."
+.TP
+.BR --test	 
+display results of 
+.BR COMMAND ,
+but do not save changes.
+
+.SH PERMISSIONS ALIASES
+With 
+.BR nfs4_setfacl ,
+one can use simple abbreviations ("aliases") to express generic "read"
+.RB ( R ),
+generic "write"
+.RB ( W ),
+and generic "execute"
+.RB ( X )
+.IR permissions ,
+familiar from the POSIX mode bits used by, e.g., 
+.BR chmod (1).
+To use these aliases, one can put them in the
+.I permissions
+field of an NFSv4 ACE and
+.B nfs4_setfacl
+will convert them: an
+.B R
+is expanded to
+.BR rntcy ,
+a
+.B W
+is expanded to
+.B watTNcCy 
+(with 
+.B D
+added to directory ACEs), and an
+.B X
+is expanded to
+.BR xtcy .
+Please refer to the
+.BR nfs4_acl (5)
+manpage for information on specific NFSv4 ACE
+.IR permissions .
+
+For example, if one wanted to grant generic "read" and "write" access on a file, the NFSv4
+.I permissions
+field would normally contain something like
+.BR rwatTnNcCy .
+Instead, one might use aliases to accomplish the same goal with
+.BR RW .
+
+The two
+.I permissions
+not included in any of the aliases are
+.B d
+(delete) and 
+.B o
+(write-owner).  However, they can still be used: e.g., a 
+.I permissions
+field consisting of
+.B Wdo
+expresses generic "write" access as well as the ability to delete and change ownership.
+.SH EXAMPLES
+Assume that the file `foo' has the following NFSv4 ACL for the following examples:
+.RS
+.nf
+
+A::OWNER@:rwatTnNcCy
+D::OWNER@:x
+A:g:GROUP@:rtncy
+D:g:GROUP@:waxTC
+A::EVERYONE@:rtncy
+D::EVERYONE@:waxTC
+.fi
+.RE
+.IP - 2
+add ACE granting `alice@nfsdomain.org' generic "read" and "execute" access (defaults to prepending ACE to ACL):
+.br
+	$ nfs4_setfacl -a A::alice@nfsdomain.org:rxtncy foo
+.IP - 2
+add the same ACE as above, but using aliases:
+.br
+	$ nfs4_setfacl -a A::alice@nfsdomain.org:RX foo
+.IP - 2
+edit existing ACL in a text editor and set modified ACL on clean save/exit:
+.br
+	$ nfs4_setfacl -e foo
+.IP - 2
+set ACL (overwrites original) to contents of a
+.I spec_file
+named `newacl.txt':
+.br
+	$ nfs4_setfacl -S newacl.txt foo
+.IP - 2
+recursively set the ACLs of all files and subdirectories in the current directory, skipping
+all symlinks encountered, to the ACL contained in the
+.I spec_file
+named `newacl.txt':
+.br
+	$ nfs4_setfacl -R -P -S newacl.txt *
+.IP - 2
+delete the first ACE, but only print the resulting ACL (does not save changes):
+.br
+	$ nfs4_setfacl --test -x 1 foo
+.IP - 2
+delete the last two ACEs above:
+.br
+	$ nfs4_setfacl -x "A::EVERYONE@rtncy, D::EVERYONE@:waxTC" foo
+.IP - 2
+modify (in-place) the second ACE above:
+.br
+	$ nfs4_setfacl -m D::OWNER@:x  D::OWNER@:xo foo
+.IP - 2
+set ACLs of `bar' and `frobaz' to ACL of `foo':
+.br
+	$ nfs4_getfacl foo | nfs4_setfacl -S - bar frobaz
+.SH AUTHORS
+.B nfs4_setfacl 
+was written by people at CITI, the Center for Information Technology Integration
+.RI ( http://www.citi.umich.edu ). 
+This manpage was written by David Richter.
+.SH CONTACT
+Please send bug reports, feature requests, and comments to 
+.RI < nfsv4@linux-nfs.org >.
+.SH SEE ALSO
+.BR nfs4_getfacl "(1), " nfs4_acl (5),
+.IR RFC3530  " (NFSv4.0), NFSv4.1 Minor Version Draft."

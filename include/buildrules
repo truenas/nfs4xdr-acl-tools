@@ -1,0 +1,95 @@
+#
+# Copyright (c) 1999, 2001-2003 Silicon Graphics, Inc.  All Rights Reserved.
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of version 2 of the GNU General Public License as published
+# by the Free Software Fondation.
+#
+# This program is distributed in the hope that it would be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  Further, any license provided herein,
+# whether implied or otherwise, is limited to this program in accordance with
+# the express provisions of the GNU General Public License.  Patent licenses,
+# if any, provided herein do not apply to combinations of this program with
+# other product or programs, or any other product whatsoever.  This program is
+# distributed without any warranty that the program is delivered free of the
+# rightful claim of any third person by way of infringement or the like.  See
+# the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write the Free Software Foundation, Inc., 59 Temple
+# Place - Suite 330, Boston MA 02111-1307, USA.
+# Common build rules for gmake
+#
+ifndef _BUILDRULES_INCLUDED_
+_BUILDRULES_INCLUDED_ = 1
+
+include $(TOPDIR)/include/builddefs
+
+clean clobber : $(SUBDIRS)
+	rm -f $(DIRT)
+	@rm -fr .libs
+	$(SUBDIRS_MAKERULE)
+
+# Never blow away subdirs
+ifdef SUBDIRS
+.PRECIOUS: $(SUBDIRS)
+$(SUBDIRS):
+	$(SUBDIRS_MAKERULE)
+endif
+
+#
+# Standard targets
+#
+
+ifdef LTCOMMAND
+$(LTCOMMAND) : $(SUBDIRS) $(OBJECTS) $(LTDEPENDENCIES)
+	$(LTLINK) -o $@ $(LDFLAGS) $(OBJECTS) $(LDLIBS)
+endif
+
+ifdef LTLIBRARY
+$(LTLIBRARY) : $(SUBDIRS) $(LTOBJECTS)
+	$(LTLINK) $(LTLDFLAGS) -o $(LTLIBRARY) $(LTOBJECTS) $(LTLIBS)
+
+%.lo: %.c
+	$(LTCOMPILE) -c $<
+endif
+
+ifdef LINGUAS
+%.pot: $(XGETTEXTFILES)
+	xgettext --omit-header --language=C --keyword=_ -o $@ $(XGETTEXTFILES)
+
+%.po:
+	$(MSGMERGE) -o $@.tmpo $@ $(PKG_NAME).pot
+	@if ! diff $@.tmpo $@ >/dev/null; then \
+		echo "$@ is out of date, see $@.tmpo"; \
+	fi
+
+%.mo: %.po
+	$(MSGFMT) -o $@ $<
+endif
+
+source :
+	$(SOURCE_MAKERULE)
+
+endif # _BUILDRULES_INCLUDED_
+
+$(_FORCE):
+
+.PHONY : depend
+
+depend : $(CFILES) $(HFILES)
+	$(SUBDIRS_MAKERULE)
+	touch .dep
+	$(MAKEDEPEND) -f - -- $(CFLAGS) -- $(CFILES) | \
+	$(SED) -e 's,`pwd`,$(TOPDIR),g' \
+	    -e 's,  */[^ ]*,,g' \
+	    -e '/^[^ ]*: *$$/d' \
+	    -e '/^#.*/d' -e '/^ *$$/d' \
+	> .dep
+	test -s .dep || rm -f .dep
+
+# Include dep, but only if it exists
+ifeq ($(shell test -f .dep && echo .dep), .dep)
+include .dep
+endif

@@ -1,0 +1,49 @@
+Installation:
+	1) to build and install the commandline tools (nfs4_getfacl, 
+	   nfs4_setfacl):
+		   $ ./configure
+		   $ make
+		   $ make install
+
+
+	2) to build and install the GUI editor (nfs4-acl-editor), first do the 
+	   above steps.  then:
+		   $ cd GUI/nfs4-acl-editor
+		   $ qmake
+		   $ make
+		   $ cp nfs4-acl-editor <whatever-bin-path>
+	
+	   the `qmake` step should generate a Qt-friendly Makefile.  Note that
+	   the GUI editor depends upon Qt 4.1.4 or later, and needs to link 
+	   against the file nfs4-acl-tools/libnfs4acl/libnfs4acl.a.
+	
+
+	3) in case of trouble, please see "Random Notes" below or contact
+	   nfsv4@linux-nfs.org.
+
+
+Random Notes (about some distros..):
+	the install targets "install-lib" and "install-dev", aren't actually
+	wired-up.  we're not yet sure whether to prune this entirely or come
+	back and do it for real.
+
+	looks for /usr/include/attr/attr.h, but 'attr' dir doesn't exist for
+	me.  after looking at the paths on my (old SuSE) system, i found that
+	this worked:
+	
+	   sudo ln -s /usr/include/linux /usr/include/attr
+
+	a different environment is building the 'attr' package wrong.  
+	1) doesn't install xattr.h, 2) isn't installing libattr.la, libattr.a, 
+	or libattr.so.1.1.0.  W/r/t the latter, i saw errors like:
+	 
+	     libtool: link: cannot find the library `/usr/lib/libattr.la' or 
+	                    unhandled argument `/usr/lib/libattr.la'
+	     gmake[1]: *** [nfs4_getfacl] Error 1
+	     make: *** [default] Error 2
+
+	if you have a libattr shared library and still see the above error, 
+	rerunning `configure' and `make' should probably fix the problem.
+	 
+
+please send any email to <nfsv4@linux-nfs.org>.

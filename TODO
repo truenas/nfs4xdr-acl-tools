@@ -1,0 +1,57 @@
+. nfs4_replace_ace_spec() isn't freeing from_ace..
+. the `exports' file is a filthy lie.
+. clear ACL, then recreate from parent directory's mode bits.  no name mapping, just UGO.
+. maybe --reset = strip ACL, then reinherit
+. maybe --ignore-inherited or something
+. maybe make 'install' install the GUI tool, too.
+. add verbose option to nfs4_getfacl and clean up nfs4_print_ace_verbose() -- e.g., we could
+	have it print a limited form of effective perms, like "user so-and-so has the equivalent
+	of generic POSIX "read" and "write" permissions."
+
+. disable "Group?" box when name is OWNER(off)/GROUP(on)/EVERYONE(off)
+. disable inheritance flags when it's a file
+. disable audit flags when it's ALLOW or DENY
+
+. change "all" button to "clear" button?
+. pref checkbox: display long perms / display abbrev. only
+. pref checkbox: auto-refresh after setting ACL
+
+. tool-tips for each of the perms and flags
+
+. add isSelected highlight to group, everyone
+. regular, selected (white box around icon), and light-selected
+. everybody icon, bad-whotype icon
+. add white box around "light" icons.
+. make "light" group, "light" everybody, and everybody.
+
+. make up/down keypresses -always- get sent to table
+
+- there's a memory leak involved with setpalette, possibly with seticon
+- in iconForACE(), try keeping one static copy of each icon around and pass that out instead
+
+. "About" menu
+. drag & drop file icons into widget
+. "effective permissions" in like a tooltip or field
+. canonical ordering
+. ?? try to help prune DENYs, maybe?
+
+. status field at the bottom
+	- "use Ctrl-up/down to drag an ACE"
+	- if (!launchedWithFile)  "invoke this on the CLI with a filename, jerky"
+	- if (!autoRefetch)  "some servers store an interpretation of ACLs you set, you
+		may wany to auto-refresh the ACL after you set it to verify that the server
+		implementation is generating the ACL to your needs."
+	- if (setting DENY ACE)  <grouse about it>.
+
+
+how maybe to get to drag & drop and not use the broken Qt garbage:
+------------------------------------------------------------
+(NEW) nah, just move to Qt 4.2.0+ and rely on the saner QTableWidget implementation there.
+
+. a QWidget "table", grid layout, manually set proportions and column 1
+	as the grower.
+-or-
+. QVBox with some custom line class, a QHBox with variously-sized QLabels for each ACL
+	. in a scrollview
+. override handlers and paint QLabel under mousedrag, scootch labels underneath, paint
+	flat gray box under the potential droptarget row.

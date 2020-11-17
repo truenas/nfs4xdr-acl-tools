@@ -1,0 +1,100 @@
+#
+# Copyright (c) 2002-2003 Silicon Graphics, Inc.  All Rights Reserved.
+# 
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of version 2 of the GNU General Public License as
+# published by the Free Software Foundation.
+# 
+# This program is distributed in the hope that it would be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# Further, this software is distributed without any warranty that it is
+# free of the rightful claim of any third person regarding infringement
+# or the like.  Any license provided herein, whether implied or
+# otherwise, applies only to this software file.  Patent licenses, if
+# any, provided herein do not apply to combinations of this program with
+# other software, or any other product whatsoever.
+# 
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write the Free Software Foundation, Inc., 59
+# Temple Place - Suite 330, Boston MA 02111-1307, USA.
+# 
+# Contact information: Silicon Graphics, Inc., 1600 Amphitheatre Pkwy,
+# Mountain View, CA  94043, or:
+# 
+# http://www.sgi.com 
+# 
+# For further information regarding this notice, see: 
+# 
+# http://oss.sgi.com/projects/GenInfo/SGIGPLNoticeExplan/
+#
+# include/builddefs.  Generated from builddefs.in by configure.
+#
+
+ifndef _BUILDDEFS_INCLUDED_
+_BUILDDEFS_INCLUDED_ = 1
+
+DEBUG = -DDEBUG
+OPTIMIZER = -g
+MALLOCLIB = 
+
+LIBNFS4ACL = $(TOPDIR)/libnfs41acl/libnfs41acl.la
+LIBATTR = -lattr
+
+prefix = /usr/local
+exec_prefix = ${prefix}
+
+DESTDIR =
+
+PKG_NAME	= nfs41acl
+PKG_USER	= root
+PKG_GROUP	= root
+PKG_RELEASE	= 0
+PKG_VERSION	= 0.0.1
+PKG_PLATFORM	= linux
+PKG_DISTRIBUTION= Linux
+PKG_BIN_DIR	= ${exec_prefix}/bin
+PKG_SBIN_DIR	= ${exec_prefix}/sbin
+PKG_LIB_DIR	= ${exec_prefix}/lib
+PKG_DEVLIB_DIR	= ${exec_prefix}/libexec
+PKG_INC_DIR	= ${prefix}/include
+PKG_MAN_DIR	= ${prefix}/share/man
+PKG_DOC_DIR	= ${prefix}/share/doc/nfs41acl
+PKG_LOCALE_DIR	= ${prefix}/share/locale
+
+CC		= gcc
+AWK		= /bin/awk
+SED		= /bin/sed
+TAR		= /bin/tar
+ZIP		= /bin/gzip
+MAKE		= /usr/bin/make
+ECHO		= /bin/echo
+SORT		= /bin/sort
+LN_S		= ln -s
+LIBTOOL		= /usr/bin/libtool
+MAKEDEPEND	= /bin/true
+
+ENABLE_SHARED = no
+HAVE_ZIPPED_MANPAGES = false
+
+ifneq "$(findstring $(PKG_PLATFORM), linux gnu gnu/kfreebsd gnu/knetbsd)" ""
+PCFLAGS = -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
+endif
+
+GCFLAGS = $(OPTIMIZER) $(DEBUG) -funsigned-char -fno-strict-aliasing -Wall \
+	  -DVERSION=\"$(PKG_VERSION)\" -DLOCALEDIR=\"$(PKG_LOCALE_DIR)\"  \
+	  -DPACKAGE=\"$(PKG_NAME)\" -I$(TOPDIR)/include -DUSE_NFSV4_TRANS
+
+# Global, Platform, Local CFLAGS
+CFLAGS += $(GCFLAGS) $(PCFLAGS) $(LCFLAGS)
+
+include $(TOPDIR)/include/buildmacros
+
+endif
+
+#
+# For targets that should always be rebuilt,
+# define a target that is never up-to-date.
+# Targets needing this should depend on $(_FORCE)
+_FORCE = __force_build
