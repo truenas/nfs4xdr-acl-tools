@@ -46,7 +46,7 @@ include $(BUILDRULES)
 install: default
 	$(INSTALL) -m 755 -d $(DESTDIR)$(PKG_BIN_DIR)
 	$(LTINSTALL) -m 755 $(LTCOMMAND) $(DESTDIR)$(PKG_BIN_DIR)
-	if [ ! -f $(DESTDIR)$(PKG_BIN_DIR)/nfs4_editfacl ]; then \
+	if [ ! -f $(DESTDIR)$(PKG_BIN_DIR)/nfs4xdr_editfacl ]; then \
 	 ln -s nfs4xdr_setfacl $(DESTDIR)$(PKG_BIN_DIR)/nfs4xdr_editfacl ; \
 	fi
 

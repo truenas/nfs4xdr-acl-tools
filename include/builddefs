@@ -39,19 +39,19 @@ DEBUG = -DDEBUG
 OPTIMIZER = -g
 MALLOCLIB = 
 
-LIBNFS4ACL = $(TOPDIR)/libnfs41acl/libnfs41acl.la
+LIBNFS4ACL = $(TOPDIR)/libnfs4acl/libnfs4acl.la
 LIBATTR = -lattr
 
-prefix = /usr/local
+prefix = /usr
 exec_prefix = ${prefix}
 
 DESTDIR =
 
-PKG_NAME	= nfs41acl
+PKG_NAME	= nfs4aclxdr
 PKG_USER	= root
 PKG_GROUP	= root
 PKG_RELEASE	= 0
-PKG_VERSION	= 0.0.1
+PKG_VERSION	= 0.3.3
 PKG_PLATFORM	= linux
 PKG_DISTRIBUTION= Linux
 PKG_BIN_DIR	= ${exec_prefix}/bin
@@ -60,7 +60,7 @@ PKG_LIB_DIR	= ${exec_prefix}/lib
 PKG_DEVLIB_DIR	= ${exec_prefix}/libexec
 PKG_INC_DIR	= ${prefix}/include
 PKG_MAN_DIR	= ${prefix}/share/man
-PKG_DOC_DIR	= ${prefix}/share/doc/nfs41acl
+PKG_DOC_DIR	= ${prefix}/share/doc/nfs4aclxdr
 PKG_LOCALE_DIR	= ${prefix}/share/locale
 
 CC		= gcc
@@ -68,7 +68,7 @@ AWK		= /bin/awk
 SED		= /bin/sed
 TAR		= /bin/tar
 ZIP		= /bin/gzip
-MAKE		= /usr/bin/make
+MAKE		= /usr/bin/gmake
 ECHO		= /bin/echo
 SORT		= /bin/sort
 LN_S		= ln -s
@@ -76,7 +76,7 @@ LIBTOOL		= /usr/bin/libtool
 MAKEDEPEND	= /bin/true
 
 ENABLE_SHARED = no
-HAVE_ZIPPED_MANPAGES = false
+HAVE_ZIPPED_MANPAGES = true
 
 ifneq "$(findstring $(PKG_PLATFORM), linux gnu gnu/kfreebsd gnu/knetbsd)" ""
 PCFLAGS = -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64

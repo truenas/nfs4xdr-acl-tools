@@ -33,7 +33,7 @@
 TOPDIR = ..
 include $(TOPDIR)/include/builddefs
 
-HFILES = libacl_nfs4.h nfs41acl.h nfs4.h
+HFILES = libacl_nfs4.h nfs4.h
 LSRCFILES = builddefs.in buildmacros buildrules config.h.in
 LDIRT =
 

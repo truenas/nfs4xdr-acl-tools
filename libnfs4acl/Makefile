@@ -36,7 +36,7 @@ TOPDIR = ..
 LTLDFLAGS += -Wl,--version-script,$(TOPDIR)/exports
 include $(TOPDIR)/include/builddefs
 
-LTLIBRARY = libnfs41acl.la
+LTLIBRARY = libnfs4acl.la
 LTLIBS = -lattr
 LTDEPENDENCIES = $(TOPDIR)/include/nfs4.h
 
@@ -120,7 +120,7 @@ default: $(LTLIBRARY) symmy
 
 # i'm not sure how to get the GUI's qmake-stuff to grok libtool; so we cheat!
 symmy:
-	if ! [ -L libnfs41acl.a ]; then ln -s .libs/libnfs41acl.a . ; fi
+	if ! [ -L libnfs4acl.a ]; then ln -s .libs/libnfs4acl.a . ; fi
 
 include $(BUILDRULES)
 

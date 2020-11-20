@@ -65,10 +65,8 @@ struct nfs4_acl* nfs4_acl_for_path(const char *path)
 
 	/* find necessary buffer size */
 	result = nfs4_getxattr(path, NULL, 0);
-	if (result < 0) {
-		printf("getxattr failed: %s\n",strerror(errno));
+	if (result < 0)
 		goto out;
-	}
 	xattr = malloc(result);
 	if (!xattr) {
 		printf("Failed to allocate memory\n");

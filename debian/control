@@ -1,11 +1,14 @@
-Source: nfs4-acl-tools
+Source: nfs4xdr-acl-tools
 Section: admin
 Priority: extra
 Maintainer: Andrew Walker <awalker@ixsystems.com>
 Build-Depends: dpkg-dev (>= 1.16.1~), debhelper (>= 9), autotools-dev, automake, libattr1-dev, libtool, libtool-bin
 Standards-Version: 3.9.6
+Homepage: http://www.citi.umich.edu/projects/nfsv4/linux/
 
 Package: nfs4xdr-acl-tools
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: Commandline tools for NFS41 acls.
+Description: Commandline and GUI ACL utilities for the NFSv4 client
+ This package contains commandline and GUI ACL utilities for the Linux
+ NFSv4 client.

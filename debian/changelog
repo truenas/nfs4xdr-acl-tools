@@ -1,5 +1,5 @@
-nfs4xdr-acl-tools (0.0.1-ix1); urgency=low
+nfs4xdr-acl-tools (0.3.3-3) unstable; urgency=medium
 
-  * Initial release
+  * initial implmentation based on nfs4-acl-tools
 
- -- Andrew Walker <awalker@ixsystem.scom>  Tue, 17 November 2020 21:00:00 +0000
+ -- Andrew Walker <awalker@ixsystems.com>  Thu, 18 Nov 2020 23:20:20 +0000

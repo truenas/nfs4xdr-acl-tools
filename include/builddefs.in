@@ -39,7 +39,7 @@ DEBUG = @debug_build@
 OPTIMIZER = @opt_build@
 MALLOCLIB = @malloc_lib@
 
-LIBNFS41ACL = $(TOPDIR)/libnfs41acl/libnfs41acl.la
+LIBNFS4ACL = $(TOPDIR)/libnfs4acl/libnfs4acl.la
 LIBATTR = @libattr@
 
 prefix = @prefix@

@@ -52,7 +52,7 @@ install: build
 	dh_testroot
 	dh_prep  
 	dh_installdirs
-	$(MAKE) prefix=$(CURDIR)/debian/nfs4-acl-tools/usr install
+	$(MAKE) prefix=$(CURDIR)/debian/nfs4xdr-acl-tools/usr install
 
 binary-indep: install
 

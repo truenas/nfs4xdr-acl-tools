@@ -28,7 +28,7 @@ Index: nfs4-acl-tools-0.3.3/Makefile
 +++ nfs4-acl-tools-0.3.3/Makefile
 @@ -46,7 +46,7 @@ LDIRT = config.log .dep config.status co
  
- SUBDIRS = include libnfs4acl nfs4_getfacl nfs4_setfacl man
+ SUBDIRS = include libnfs4acl nfs4xdr_getfacl nfs4xdr_setfacl man
  
 -default: $(CONFIGURE)
 +default:

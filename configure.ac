@@ -1,4 +1,4 @@
-AC_INIT([nfs4-acl-tools], [0.3.3])
+AC_INIT([nfs4xdr-acl-tools], [0.3.3])
 AC_CONFIG_HEADER(include/config.h)
 AC_PREFIX_DEFAULT(/usr/local)
 
@@ -25,12 +25,13 @@ AC_CHECK_FUNCS([memset strchr])
 
 AC_CHECK_LIB([attr], [getxattr])
 
-AC_PACKAGE_GLOBALS([nfs4acl])
-AC_PACKAGE_UTILITIES([nfs4acl])
+AC_PACKAGE_GLOBALS([nfs4aclxdr])
+AC_PACKAGE_UTILITIES([nfs4aclxdr])
 AC_PACKAGE_NEED_ATTR_XATTR_H
 AC_PACKAGE_NEED_GETXATTR_LIBATTR
 AC_MANUAL_FORMAT
 
 AC_FUNC_GCC_VISIBILITY
+AC_DEFINE([HAVE_VISIBILITY_ATTRIBUTE], [], [Description])
 
 AC_OUTPUT(include/builddefs)
