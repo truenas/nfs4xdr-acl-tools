@@ -86,15 +86,20 @@ int acl_nfs4_xattr_pack(struct nfs4_acl * acl, char** bufp)
 				goto failed;
 			}
 		}
+		if (ace->whotype != 0) {
+			whotype = ace->whotype;
+		}
+		else {
+			result = acl_nfs4_get_who(ace, &whotype, &who);
+			if (result < 0) {
+				goto free_failed;
+			}
+		}
 		nfsace4i *nacep = &nacl->na41_aces.na41_aces_val[ace_num -1];
 		nacep->type = ace->type;
 		nacep->flag = ace->flag;
 		nacep->access_mask = ace->access_mask;
 
-		result = acl_nfs4_get_who(ace, &whotype, &who);
-		if (result < 0) {
-			goto free_failed;
-		}
 		switch(whotype) {
 		case NFS4_ACL_WHO_OWNER:
 			nacep->iflag |= ACEI4_SPECIAL_WHO;
@@ -113,6 +118,12 @@ int acl_nfs4_xattr_pack(struct nfs4_acl * acl, char** bufp)
 			nacep->who = atoi(who);
 
 		}
+#ifdef NFS4_DEBUG
+		fprintf(stderr, "who: 0x%08x, iflag: 0x%08x, type: 0x%08x "
+			"access_mask: 0x%08x, flags: 0x%08x\n",
+			nacep->who, nacep->iflag, nacep->type,
+			nacep->access_mask, nacep->flag);
+#endif
 		nfs4_get_next_ace(&ace);
 		ace_num++;
 	}

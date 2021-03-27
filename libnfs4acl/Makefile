@@ -63,6 +63,7 @@ LT_AGE = 0
 #	acl_nfs4_xattr_pack.c \
 #	acl_nfs4_xattr_size.c \
 #	acl_nfs4_string2ace.c \
+#	acl_nfs4_inheritance.c \
 #	nfs4_acl_for_path.c \
 #	nfs4_init_acl_from_file.c \
 #	nfs4_init_acl_from_string.c \
@@ -85,6 +86,7 @@ LIBACL_NFS4_CFILES = \
 	acl_nfs4_xattr_load.c \
 	acl_nfs4_xattr_pack.c \
 	acl_nfs4_xattr_size.c \
+	acl_nfs4_inheritance.c \
 	nfs4_ace_from_string.c \
 	nfs4_acl_for_path.c \
 	nfs4_acl_spec_from_file.c \
