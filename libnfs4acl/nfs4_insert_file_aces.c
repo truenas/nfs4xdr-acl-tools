@@ -46,9 +46,11 @@
  */
 int nfs4_insert_file_aces(struct nfs4_acl *acl, FILE* fp, unsigned int index)
 {
-	char *acl_spec;
+	char *acl_spec = NULL;
 
-	if ((acl_spec = nfs4_acl_spec_from_file(fp)) == NULL)
+	if ((acl_spec = nfs4_acl_spec_from_file(fp)) == NULL) {
+		fprintf(stderr, "Failed to spec_from_file\n");
 		return -1;
+	}
 	return nfs4_insert_string_aces(acl, acl_spec, index);
 }

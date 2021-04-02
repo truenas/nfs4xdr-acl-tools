@@ -60,26 +60,14 @@
 
 void nfs4_print_acl(FILE *fp, struct nfs4_acl *acl)
 {
-	struct nfs4_ace *ace = NULL;
-	int ace_count = 1;
-	int rv, trivialp;
-
-	rv = acl_is_trivial_np(acl, &trivialp);
-	if (rv != 0) {
-		fprintf(stderr, "acl_is_trivial_np() failed: %s\n",
-			strerror(errno));
+	char *acl_text = NULL;
+	acl_text = _nfs4_acl_to_text_np(acl, 0, 0);
+	if (!acl_text) {
+		fprintf(stderr, "Failed to convert ACL to text\n");
 		return;
 	}
-
-	printf("# ACE_FLAG: 0x%08x\n", acl->aclflags4);
-	printf("# IS_TRIVIAL: %s\n", trivialp == 1 ? "true" : "false");
-
-	ace = nfs4_get_first_ace(acl);
-	for (ace = nfs4_get_first_ace(acl); ace != NULL;
-	     ace = nfs4_get_next_ace(&ace)) {
-		nfs4_print_ace(fp, ace, acl->is_directory);
-	}
+	fprintf(fp, "%s\n", acl_text);
 	fflush(fp);
-
+	free(acl_text);
 	return;
 }

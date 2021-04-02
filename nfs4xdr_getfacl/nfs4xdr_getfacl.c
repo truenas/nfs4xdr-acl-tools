@@ -37,6 +37,7 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <libgen.h>
 #include "libacl_nfs4.h"
 
@@ -46,8 +47,10 @@ static char *execname;
 
 int main(int argc, char **argv)
 {
-	struct nfs4_acl *acl;
-	int res = 1;
+	struct nfs4_acl *acl = NULL;
+	char *acl_text = NULL;
+	struct stat st;
+	int res = 1, error, trivial;
 	
 	execname = basename(argv[0]);
 
@@ -68,11 +71,34 @@ int main(int argc, char **argv)
 		res = 0;
 		goto out;
 	}
-	acl = nfs4_acl_for_path(argv[1]);
-	if (acl != NULL) {
-		nfs4_print_acl(stdout, acl);
-		res = 0;
+	acl = nfs4_acl_get_file(argv[1]);
+	if (acl == NULL) {
+		return (1);
 	}
+	error = stat(argv[1], &st);
+	if (error)
+		return (1);
+
+	printf("# File: %s\n", argv[1]);
+	printf("# owner: %d\n", st.st_uid);
+	printf("# group: %d\n", st.st_gid);
+	printf("# mode: 0o%o\n", st.st_mode);
+
+	error = nfs4_acl_is_trivial_np(acl, &trivial);
+	if (error)
+		return (1);
+
+	printf("# trivial_acl: %s\n", trivial == 1 ? "true" : "false");
+	printf("# flags: 0x%08x\n", acl->aclflags4);
+
+	acl_text = _nfs4_acl_to_text_np(acl, 0, 0);
+	if (!acl_text) {
+		fprintf(stderr, "%s: acl_to_text() failed: %s\n",
+			argv[1], strerror(errno));
+		return (1);
+	}
+	printf("%s", acl_text);
+
 out:
 	return res;
 }

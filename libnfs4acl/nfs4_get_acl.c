@@ -37,71 +37,129 @@
 #include <attr/xattr.h>
 #include <sys/stat.h>
 #include <stdio.h>
+#include <err.h>
 #include "libacl_nfs4.h"
 
-static int nfs4_getxattr(const char *, void *, size_t);
+static int nfs4_getxattr(const char *, const int, void *, size_t);
 
 /* returns a newly-allocated struct nfs4_acl for `path', or NULL on error. */
-struct nfs4_acl* nfs4_acl_for_path(const char *path)
+
+struct nfs4_acl *do_xattr_load(const char *path, int fd,
+			       char *xattr, int size)
 {
-	int result;
-	struct nfs4_acl *acl = NULL;
 	struct stat st;
-	char *xattr;
+	int error;
 	u32 iflags;
+	struct nfs4_acl *acl = NULL;
 
-	if (path == NULL)
-		goto out;
-
-	result = stat(path, &st);
-	if (result < 0) {
-		printf("Invalid filename: %s\n", path);
-		goto out;
+	if (path != NULL) {
+		error = stat(path, &st);
+		if (error) {
+			warnx("%s: stat() failed", path);
+			free(xattr);
+			return NULL;
+		}
+	}
+	else {
+		error = fstat(fd, &st);
+		if (error) {
+			warnx("fstat() failed");
+			free(xattr);
+			return NULL;
+		}
 	}
 	if (st.st_mode & S_IFDIR)
 		iflags = NFS4_ACL_ISDIR;
 	else
 		iflags = NFS4_ACL_ISFILE;
 
-	/* find necessary buffer size */
-	result = nfs4_getxattr(path, NULL, 0);
-	if (result < 0)
-		goto out;
-	xattr = malloc(result);
-	if (!xattr) {
-		printf("Failed to allocate memory\n");
-		goto out;
-	}
-
-	/* reconstruct the ACL */
-	result = nfs4_getxattr(path, xattr, result);
-	if (result < 0)
-		goto out_free;
-	acl = acl_nfs4_xattr_load(xattr, result, iflags);
+	acl = acl_nfs4_xattr_load(xattr, size, iflags);
 	if (acl == NULL)
-		perror("Failed to extract nfs4acl from xattr");
-out_free:
-	free(xattr);
-out:
+		warnx("acl_nfs4_xattr_load() failed");
 	return acl;
 }
 
-static int nfs4_getxattr(const char *path, void *value, size_t size)
+struct nfs4_acl* nfs4_acl_get_file(const char *path)
+{
+	int result;
+	struct nfs4_acl *acl = NULL;
+	char *xattr = NULL;
+
+	if (path == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	/* find necessary buffer size */
+	result = nfs4_getxattr(path, -1, NULL, 0);
+	if (result < 0)
+		return NULL;
+
+	xattr = malloc(result);
+	if (xattr == NULL) {
+		warnx("Failed to allocate memory");
+		return NULL;
+	}
+
+	/* reconstruct the ACL */
+	result = nfs4_getxattr(path, -1, xattr, result);
+	if (result < 0) {
+		free(xattr);
+		return NULL;
+	}
+
+	acl = do_xattr_load(path, -1, xattr, result);
+
+	free(xattr);
+	return acl;
+}
+
+
+struct nfs4_acl* nfs4_acl_get_fd(int fd)
+{
+	int result;
+	struct nfs4_acl *acl = NULL;
+	char *xattr = NULL;
+
+	/* find necessary buffer size */
+	result = nfs4_getxattr(NULL, fd, NULL, 0);
+	if (result < 0)
+		return NULL;
+
+	xattr = malloc(result);
+	if (xattr == NULL) {
+		warnx("Failed to allocate memory");
+		return NULL;
+	}
+
+	/* reconstruct the ACL */
+	result = nfs4_getxattr(NULL, fd, xattr, result);
+	if (result < 0) {
+		free(xattr);
+		return NULL;
+	}
+	acl = do_xattr_load(NULL, fd, xattr, result);
+
+	free(xattr);
+	return acl;
+}
+
+static int nfs4_getxattr(const char *path, int fd, void *value, size_t size)
 {
 	int res;
 
-	res = getxattr(path, ACL_NFS4_XATTR, value, size);
-	if (res < -10000) {
-		fprintf(stderr,"An internal NFS server error code (%d) was returned; this should never happen.\n",res);
-	} else if (res < 0) {
-		if (errno == ENOATTR)
-			fprintf(stderr,"Attribute not found on file.\n");
-		else if (errno == EREMOTEIO)
-		    fprintf(stderr,"An NFS server error occurred.\n");
-		else if (errno == EOPNOTSUPP)
-			fprintf(stderr,"Operation to request attribute not supported.\n");
-		else
-			perror("Failed getxattr operation");
+	if (path != NULL) {
+		res = getxattr(path, ACL_NFS4_XATTR, value, size);
+	}
+	else if (fd) {
+		res = fgetxattr(fd, ACL_NFS4_XATTR, value, size);
+	}
+	else {
+		errno = EINVAL;
+		return (-1);
+	}
+	if (res < 0) {
+		warnx("Failed to get NFSv4 ACL");
 	}
 	return res;
 }

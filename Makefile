@@ -44,7 +44,7 @@ LSRCFILES = configure configure.in aclocal.m4 Makepkgs install-sh exports \
 LDIRT = config.log .dep config.status config.cache confdefs.h conftest* \
 	Logs/* built .census install.* install-dev.* install-lib.* *.gz
 
-SUBDIRS = include libnfs4acl nfs4xdr_getfacl nfs4xdr_setfacl man
+SUBDIRS = include libnfs4acl nfs4xdr_getfacl nfs4xdr_setfacl nfs4xdr_winacl man
 
 default: $(CONFIGURE)
 ifeq ($(HAVE_BUILDDEFS), no)

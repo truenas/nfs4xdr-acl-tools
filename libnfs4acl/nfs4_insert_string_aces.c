@@ -38,9 +38,16 @@
 
 int nfs4_insert_string_aces(struct nfs4_acl *acl, const char *acl_spec, unsigned int index)
 {
-	char *s, *sp, *ssp;
-	struct nfs4_ace *ace;
+	char *s = NULL, *sp = NULL, *ssp = NULL;
 	int res = 0;
+	bool is_append;
+
+	if (acl == NULL || acl_spec == NULL) {
+		errno = EINVAL;
+		goto out_failed;
+	}
+
+	is_append = ((acl->naces == 0) || (index == acl->naces + 1));
 
 	if ((s = sp = strdup(acl_spec)) == NULL)
 		goto out_failed;
@@ -49,11 +56,18 @@ int nfs4_insert_string_aces(struct nfs4_acl *acl, const char *acl_spec, unsigned
 		if (!strlen(ssp))
 			continue;
 
-		if ((ace = nfs4_ace_from_string(ssp, acl->is_directory)) == NULL)
-			goto out_failed;
-
-		if (nfs4_insert_ace_at(acl, ace, index++)) {
-			free(ace);
+		/*
+		 * Take more efficient path if this is an append operation.I
+		 */
+		if (is_append) {
+			res = _nfs4_acl_entry_from_text(acl, ssp, NULL);
+		}
+		else {
+			res = _nfs4_acl_entry_from_text(acl, ssp, &index);
+			index++;
+		}
+		if (res != 0) {
+			fprintf(stderr, "failed to get entry from text: %s\n", strerror(errno));
 			goto out_failed;
 		}
 	}

@@ -49,7 +49,7 @@ int nfs4_remove_string_aces(struct nfs4_acl *acl, char *acl_spec)
 
 	for (anti_ace = nfs4_get_first_ace(anti_acl); anti_ace != NULL; anti_ace = nfs4_get_next_ace(&anti_ace))
 		for (ace = nfs4_get_first_ace(acl); ace != NULL; ace = nfs4_get_next_ace(&ace))
-			if (!nfs4_ace_cmp(anti_ace, ace))
+			if (!ace_is_equal(anti_ace, ace))
 				nfs4_remove_ace(acl, ace);
 	err = 0;
 out:

@@ -37,27 +37,45 @@
 
 /*returns a pointer to an ace formed from the given parameters*/
 
-struct nfs4_ace * nfs4_new_ace(int is_directory, u32 type, u32 flag, u32 access_mask,
-			int whotype, char* who)
+struct nfs4_ace *nfs4_new_ace(int is_directory,
+			      nfs4_acl_type_t type,
+			      nfs4_acl_flag_t flag,
+			      nfs4_acl_perm_t access_mask,
+			      nfs4_acl_who_t whotype, char* who)
 {
-	struct nfs4_ace *ace;
+	struct nfs4_ace *ace = NULL;
 	int result;
 
-	if ((ace = malloc(sizeof(*ace))) == NULL) {
+	ace = calloc(1, sizeof(struct nfs4_ace));
+	if (ace == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
 	ace->type = type;
 	ace->flag = flag;
-
+#if 0
+	/*
+	 * Original nfs4-acl-tools prevents setting DENY aces for
+	 * various write bits. Purpose of this is unclear. Possibly
+	 * related to conversion to POSIX1e ACLs. FreeBSD allows
+	 * these to be set and so we have removed this restriction.
+	 */
 	if( type == NFS4_ACE_ACCESS_DENIED_ACE_TYPE )
 		access_mask = access_mask & ~(NFS4_ACE_MASK_IGNORE);
-
-	/* Castrate delete_child if we aren't a directory */
-	if (!is_directory)
+#endif
+	if (!is_directory) {
 		access_mask &= ~NFS4_ACE_DELETE_CHILD;
-
+	}
+	if (!is_directory && (flag & NFS4_ACE_FLAGS_DIRECTORY)) {
+#if NFS4_DEBUG
+		fprintf(stderr, "Flags are invalid for a directory: 0x%08x\n",
+			flags);
+#endif
+		free(ace);
+		errno = EINVAL;
+		return NULL;
+	}
 	ace->access_mask = access_mask & NFS4_ACE_MASK_ALL;
 
 	result = acl_nfs4_set_who(ace, whotype, who);
@@ -65,6 +83,5 @@ struct nfs4_ace * nfs4_new_ace(int is_directory, u32 type, u32 flag, u32 access_
 		free(ace);
 		return NULL;
 	}
-
 	return ace;
 }
