@@ -58,6 +58,7 @@
 #define REMOVE_ACTION		3
 #define INSERT_ACTION		4
 #define EDIT_ACTION		5
+#define STRIP_ACTION		6
 
 /* Walks */
 #define DEFAULT_WALK		0	/* Follow symbolic link args, Skip links in subdirectories */
@@ -141,7 +142,7 @@ int main(int argc, char **argv)
 		return err;
 	}
 
-	while ((opt = getopt_long(argc, argv, "-:a:A:s:S:x:X:m:ethvHRPL", long_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "-:a:A:s:S:x:X:m:bethvHRPL", long_options, NULL)) != -1) {
 		switch (opt) {
 			case 'a':
 				mod_string = optarg;
@@ -175,7 +176,10 @@ int main(int argc, char **argv)
 				assert_wu_wei(action);
 				action = SUBSTITUTE_ACTION;
 				break;
-
+			case 'b':
+				assert_wu_wei(action);
+				action = STRIP_ACTION;
+				break;
 			case 'x':
 				ace_index = strtoul_reals(optarg, 10);
 				if(ace_index == ULONG_MAX)
@@ -426,6 +430,16 @@ static int do_apply_action(const char *path, const struct stat *_st)
 		nfs4_free_acl(acl);
 		acl = newacl;
 		break;
+
+	case STRIP_ACTION:
+		newacl = acl_nfs4_strip(acl);
+		if (newacl == NULL) {
+			fprintf(stderr, "Failed to strip acl on path [%s]: %s\n",
+				path, strerror(errno));
+			goto failed;
+		}
+		acl = newacl;
+		break;
 	}
 
 	if (is_test) {
@@ -544,6 +558,7 @@ static void __usage(const char *name, int is_ef)
 	"   -X file  		 read ACL entries to remove from file\n"
 	"   -s acl_spec		 set ACL to acl_spec (replaces existing ACL)\n"
 	"   -S file		 read ACL entries to set from file\n"
+	"   -b file		 strip ACL entry from the file\n"
 	"   -e, --edit 		 edit ACL in $EDITOR (DEFAULT: " EDITOR "); save on clean exit\n"
 	"   -m from_ace to_ace	 modify in-place: replace 'from_ace' with 'to_ace'\n"
 	"   --version		 print version and exit\n"

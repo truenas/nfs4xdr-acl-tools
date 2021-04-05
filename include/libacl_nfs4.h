@@ -170,11 +170,13 @@ TAILQ_HEAD(ace_container_list_head, ace_container);
 extern int			acl_nfs4_set_who(struct nfs4_ace*, int, char*);
 extern struct nfs4_acl *	acl_nfs4_copy_acl(struct nfs4_acl *);
 extern struct nfs4_acl *	acl_nfs4_xattr_load(char *, int, u32);
+extern struct nfs4_acl *	acl_nfs4_strip(struct nfs4_acl *);
 extern int			acl_nfs4_xattr_pack(struct nfs4_acl *, char**);
 extern int			acl_nfs4_xattr_size(struct nfs4_acl *);
 
 extern void			nfs4_free_acl(struct nfs4_acl *);
 extern int			nfs4_set_acl(struct nfs4_acl *acl, const char *path);
+extern int			nfs4_acl_is_trivial_np(struct nfs4_acl *acl, int *trivialp);
 extern int			nfs4_remove_ace(struct nfs4_acl *acl, struct nfs4_ace *ace);
 extern int			nfs4_remove_ace_at(struct nfs4_acl *acl, unsigned int index);
 extern int			nfs4_insert_ace_at(struct nfs4_acl *acl, struct nfs4_ace *ace, unsigned int index);

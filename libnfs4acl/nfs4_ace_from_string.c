@@ -184,6 +184,9 @@ struct nfs4_ace * nfs4_ace_from_string(char *ace_buf, int is_dir)
 	field = fields[FLAG_INDEX];
 	for (buflen = strlen(field); buflen > 0; buflen--) {
 		switch (*field) {
+			case FLAG_INHERITED:
+				flags |= NFS4_ACE_INHERITED_ACE;
+				break;
 			case FLAG_FILE_INHERIT:
 				flags |= NFS4_ACE_FILE_INHERIT_ACE;
 				break;
