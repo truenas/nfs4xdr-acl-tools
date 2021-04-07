@@ -60,19 +60,20 @@ static int print_acl_path(char *path, int flags, bool quiet)
 	char *acl_text = NULL;
 	struct stat st;
 	int error, trivial;
+	bool ok;
+	char *aclflags = NULL;
 
 	acl = nfs4_acl_get_file(path);
 	if (acl == NULL) {
-		return (1);
+		return (-1);
 	}
 
 	if (!quiet) {
 		error = stat(path, &st);
 		if (error) {
 			nfs4_free_acl(acl);
-			return (1);
+			return (-1);
 		}
-
 		printf("# File: %s\n", path);
 		printf("# owner: %d\n", st.st_uid);
 		printf("# group: %d\n", st.st_gid);
@@ -81,11 +82,16 @@ static int print_acl_path(char *path, int flags, bool quiet)
 		error = nfs4_acl_is_trivial_np(acl, &trivial);
 		if (error) {
 			nfs4_free_acl(acl);
-			return (1);
+			return (-1);
 		}
-
+		ok = nfs4_aclflag_to_text(acl->aclflags4, &aclflags);
+		if (!ok) {
+			nfs4_free_acl(acl);
+			return (-1);
+		}
 		printf("# trivial_acl: %s\n", trivial == 1 ? "true" : "false");
-		printf("# ACL flags: 0x%08x\n", acl->aclflags4);
+		printf("# ACL flags: %s\n", aclflags);
+		free(aclflags);
 	}
 
 	acl_text = _nfs4_acl_to_text_np(acl, 0, flags);
@@ -94,7 +100,7 @@ static int print_acl_path(char *path, int flags, bool quiet)
 			path, strerror(errno));
 
 		nfs4_free_acl(acl);
-		return (1);
+		return (-1);
 	}
 	printf("%s", acl_text);
 	free(acl_text);

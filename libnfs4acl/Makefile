@@ -106,6 +106,7 @@ LIBACL_NFS4_CFILES = \
 	nfs41acl_xdr.c \
 	nfs4_ace_to_text_bsd.c \
 	nfs4_ace_from_text_bsd.c \
+	nfs4_aclflag_text.c \
 	acl_nfs4_support_bsd.c \
 	strtoul_reals.c
 

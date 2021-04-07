@@ -227,6 +227,8 @@ extern int			nfs4_print_ace_verbose(struct nfs4_ace * ace, u32 isdir);
 extern char*			nfs4_get_ace_type(struct nfs4_ace*, char*, int);
 extern char*			nfs4_get_ace_flags(struct nfs4_ace*, char*);
 extern char*			nfs4_get_ace_access(struct nfs4_ace*, char*, int);
+extern bool			nfs4_aclflag_to_text(nfs4_acl_aclflags_t flags4, char **out);
+extern bool			nfs4_aclflag_from_text(char *flags, nfs4_acl_aclflags_t *flags4p);
 
 
 /** misc **/

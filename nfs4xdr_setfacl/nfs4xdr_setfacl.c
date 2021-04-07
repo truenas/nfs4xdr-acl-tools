@@ -108,16 +108,6 @@ static struct option long_options[] = {
 	{ NULL,			0, 0, 0,  },
 };
 
-static const struct {
-        nfs4_acl_aclflags_t flag;
-        const char *flagstr;
-} acl_flag_str[] = {
-	{ ACL_AUTO_INHERIT, "auto-inherit" },
-	{ ACL_PROTECTED, "protected" },
-	{ ACL_DEFAULTED, "defaulted" },
-	{ 0, "none" },
-};
-
 /* need these global so the nftw() callback can use them */
 static int action = NO_ACTION;
 static int do_recursive = NO_RECURSIVE;
@@ -373,10 +363,11 @@ static int apply_action(const char *_path, const struct stat *stat, int flag, st
 /* returns 0 on success, nonzero on failure */
 static int do_apply_action(const char *path, const struct stat *_st)
 {
-	int err = 0, i;
+	int err = 0;
 	struct nfs4_acl *acl = NULL, *newacl;
 	struct stat stats, *st = (struct stat *)_st;
 	nfs4_acl_aclflags_t aclflags = 0;
+	bool ok;
 
 	if (st == NULL) {
 		if (stat(path, &stats)) {
@@ -457,14 +448,8 @@ static int do_apply_action(const char *path, const struct stat *_st)
 		break;
 
 	case SET_FLAGS_ACTION:
-		for (i = 0; i < sizeof(acl_flag_str) / sizeof(acl_flag_str[0]); i++) {
-			if (strcmp(mod_string, acl_flag_str[i].flagstr) == 0) {
-				aclflags = acl_flag_str[i].flag;
-				break;
-			}
-		}
-		if (aclflags == 0) {
-			fprintf(stderr, "Invalid ACL flag: %s.\n", mod_string);
+		ok = nfs4_aclflag_from_text(mod_string, &aclflags);
+		if (!ok) {
 			goto failed;
 		}
 		acl->aclflags4 = aclflags;
