@@ -4,11 +4,11 @@
 .\" http://www.delorie.com/gnu/docs/groff/groff_37.html
 .\" http://www.schweikhardt.net/man_page_howto.html
 .\" 
-.TH NFS4_GETFACL 1 "version 0.3.3, August 2008" "Linux" "NFSv4 Access Control Lists"
+.TH NFS4XDR_GETFACL 1 "version 0.3.3, August 2008" "Linux" "NFSv4 Access Control Lists"
 .SH NAME
-nfs4_getfacl \- get NFSv4 file/directory access control lists
+nfs4xdr_getfacl \- get NFSv4 file/directory access control lists
 .SH SYNOPSIS
-.B nfs4_getfacl [-H]
+.B nfs4xdr_getfacl [-invH]
 .I file
 .SH DESCRIPTION
 .B nfs4_getfacl 
@@ -16,43 +16,60 @@ will display the NFSv4 Access Control List (ACL) for
 .I file 
 (a file or directory), provided 
 .I file 
-is on a mounted NFSv4 filesystem which supports ACLs.
+is on a filesystem exposing NFSv4 ACLs as a system.nfs4_acl_xdr xattr.
 
-If the 
+This version provides output compatible getfacl and setfacl on FreeBSD,
+and is enhanced to provide support for viewing and managing ACL features
+present in the NFSv4.1.
+
+If the
 .BR -H / --more-help
 flag is specified, 
-.B nfs4_getfacl
+.B nfs4xdr_getfacl
 will print some information about NFSv4 ACLs and the fields used in ACEs.  
+
+The following options are available:
+.TP
+.BR "-i" , " --append-id"
+Append numerical ID at the end of each entry containing named principal.
+.TP
+.BR "-n" , " --numeric"
+Display user and group IDs numerically rather than converting to a user or group name.
+.TP
+.BR "-q" , " --quiet"
+Do not write commented information about file name and ownership.
+.TP
+.BR "-v" , " --verbose"
+Display access mask and flags in verbose form.
+.TP
 
 The output format for an NFSv4 file ACL, e.g., is:
 .RS
 .nf
-
-A::OWNER@:rwatTnNcCy
-A::alice@nfsdomain.org:rxtncy
-A::bob@nfsdomain.org:rwadtTnNcCy
-A:g:GROUP@:rtncy
-D:g:GROUP@:waxTC
-A::EVERYONE@:rtncy
-D::EVERYONE@:waxTC
+         everyone@:r-x-----------:-------:allow
+            group@:rwx-----------:-------:allow
+        group:root:rwxpDdaARWcCos:fdin---:allow
+group:builtin_users:rwxpDdaARWcCos:fd-----:allow
+group:builtin_users:r--p------c---:fd-----:allow
+            owner@:rwxpD-aARWcCos:-------:allow
 .fi
 .RE
-
-In the example output above, the user `alice@nfsdomain.org' has the equivalent
-of "read" and "execute" permissions, `bob@nfsdomain.org' has "read" and 
-"write", and both `GROUP@' and `EVERYONE@' have "read".
 
 Refer to the 
 .BR nfs4_acl (5)
 manpage for detailed information about NFSv4 ACL terminology and syntax. 
 .SH AUTHORS
 .B nfs4_getfacl
-was written by people at CITI, the Center for Information Technology Integration
+was initially written by people at CITI, the Center for Information Technology Integration
 .RI ( http://www.citi.umich.edu ).
-This manpage was written by David Richter.
+
+.B nfs4xdr_getfacl
+expands on this work by providing userspace management features for local filesystems
+that support NFSv4 ACLs.
+
 .SH CONTACT
 Please send bug reports, feature requests, and comments to
-.RI < nfsv4@linux-nfs.org >.
+.RI < dev@ixsystems.com >.
 .SH SEE ALSO
-.BR nfs4_setfacl "(1), " nfs4_acl (5),
-.IR RFC3530 " (NFSv4.0), NFSv4.1 Minor Version Draft."
+.BR nfs4xdr_setfacl "(1), " nfs4xdr_acl (5),
+.IR RFC5661 " Network File System (NFS) Version 4 Minor Version 1 Protocol."

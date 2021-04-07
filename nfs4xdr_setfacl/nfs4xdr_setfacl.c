@@ -97,6 +97,7 @@ static struct option long_options[] = {
 	{ "remove-spec",	1, 0, 'x' },
 	{ "remove-file",	1, 0, 'X' },
 	{ "modify",		1, 0, 'm' },
+	{ "strip",		0, 0, 's' },
 	{ "edit",		0, 0, 'e' },
 	{ "test",		0, 0, 't' },
 	{ "help",		0, 0, 'h' },
@@ -574,6 +575,7 @@ static void __usage(const char *name, int is_ef)
 	"   -s acl_spec		 set ACL to acl_spec (replaces existing ACL)\n"
 	"   -S file		 read ACL entries to set from file\n"
 	"   -b file		 strip ACL entry from the file\n"
+	"   -p aclflags file	 set specified ACL flags on file\n"
 	"   -e, --edit 		 edit ACL in $EDITOR (DEFAULT: " EDITOR "); save on clean exit\n"
 	"   -m from_ace to_ace	 modify in-place: replace 'from_ace' with 'to_ace'\n"
 	"   --version		 print version and exit\n"
