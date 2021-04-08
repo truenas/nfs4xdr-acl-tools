@@ -292,10 +292,12 @@ struct nfs4_ace
 		if (error)
 			goto malformed_field;
 	}
+#ifdef NFS4_DEBUG
 	fprintf(stderr, "ACL string: [%s] -> whotype: [%d], who: [%s], "
 			"access_mask: [0x%08x], flag: [0x%08x], type: [%d]\n",
 			str, entry->whotype, entry->who, entry->access_mask,
 			entry->flag, entry->type);
+#endif
 	return (entry);
 
 truncated_entry:

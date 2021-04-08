@@ -36,21 +36,43 @@
 #include <err.h>
 #include <unistd.h>
 #include <stdio.h>
+#include "nfs41acl.h"
 #include "libacl_nfs4.h"
+
+#define NFS4_MIN_ACLSIZE	(sizeof(nfsacl41i) + sizeof(nfsace4i))
 
 int nfs4_acl_set_file(struct nfs4_acl *acl, const char *path)
 {
-	int res = 0;
+	size_t acl_size = 0;
 	char *xdrbuf = NULL;
+	int res;
 
-	res = acl_nfs4_xattr_pack(acl, &xdrbuf);
-	if (res <= 0) {
+	acl_size = acl_nfs4_xattr_pack(acl, &xdrbuf);
+	if (acl_size < NFS4_MIN_ACLSIZE) {
 		warnx("nfs4_acl_set_file() failed");
 		free(xdrbuf);
-		return (res);
+		return (-1);
 	}
 
+#ifdef USE_SECURITY_NAMESPACE
+	/*
+	 * Check for system ACL and fail hard if
+	 * it exists.
+	 */
+	res = getxattr(path, SYSTEM_XATTR, NULL, 0);
+	if (res != -1) {
+		warnx("nfs4xdr-acl-tools is built with option "
+		      "to write to the 'security' xattr namespace, "
+		      "but filesystem uses native NFSv4 ACLs.");
+		free(xdrbuf);
+		errno = ENOSYS;
+		return (-1);
+	}
+
+	res = setxattr(path, ACL_NFS4_XATTR, xdrbuf, acl_size, 0);
+#else
 	res = setxattr(path, ACL_NFS4_XATTR, xdrbuf, res, XATTR_REPLACE);
+#endif
 	if (res < 0) {
 		warnx("nfs4_acl_set_file() failed");
 	}
@@ -62,17 +84,40 @@ int nfs4_acl_set_file(struct nfs4_acl *acl, const char *path)
 
 int nfs4_acl_set_fd(struct nfs4_acl *acl, int fd)
 {
-	int res = 0;
+	size_t acl_size = 0;
 	char *xdrbuf = NULL;
+	int res;
 
-	res = acl_nfs4_xattr_pack(acl, &xdrbuf);
-	if (res <= 0) {
+	acl_size = acl_nfs4_xattr_pack(acl, &xdrbuf);
+	if (acl_size < NFS4_MIN_ACLSIZE) {
 		warnx("nfs4_acl_set_file() failed");
 		free(xdrbuf);
-		return (res);
+		return (-1);
 	}
 
+#ifdef USE_SECURITY_NAMESPACE
+	/*
+	 * Check for system ACL and fail hard if
+	 * it exists.
+	 */
+	res = fgetxattr(fd, SYSTEM_XATTR, NULL, 0);
+	if (res != -1) {
+		warnx("nfs4xdr-acl-tools is built with option "
+		      "to write to the 'security' xattr namespace, "
+		      "but filesystem uses native NFSv4 ACLs.");
+		free(xdrbuf);
+		errno = ENOSYS;
+		return (-1);
+	}
+	res = fsetxattr(fd, ACL_NFS4_XATTR, xdrbuf, acl_size, 0);
+#else
+	/*
+	 * If system namespace is used and filesystem supports native
+	 * NFSv4 ACLs, then absence of xattr is significant error
+	 * condition and we should fail with ENODATA.
+	 */
 	res = fsetxattr(fd, ACL_NFS4_XATTR, xdrbuf, res, XATTR_REPLACE);
+#endif
 	if (res < 0) {
 		warnx("nfs4_acl_set_fd() failed");
 	}

@@ -141,9 +141,15 @@
  */
 #define NFS4_MAX_ACLSIZE	(65536)
 
-
 /* NFS4 acl xattr name */
-#define ACL_NFS4_XATTR "system.nfs4_acl_xdr"
+#define SYSTEM_XATTR "system.nfs4_acl_xdr"
+#define SECURITY_XATTR "security.nfs4acl_xdr"
+
+#ifdef USE_SECURITY_NAMESPACE
+#define ACL_NFS4_XATTR SECURITY_XATTR
+#else
+#define ACL_NFS4_XATTR SYSTEM_XATTR
+#endif
 
 /* Macro for finding empty tailqs */
 #define TAILQ_IS_EMPTY(head) (head.tqh_first == NULL)
@@ -178,8 +184,7 @@ extern int			acl_nfs4_set_who(struct nfs4_ace*, int, char*);
 extern struct nfs4_acl *	acl_nfs4_copy_acl(struct nfs4_acl *);
 extern struct nfs4_acl *	acl_nfs4_xattr_load(char *, int, u32);
 extern struct nfs4_acl *	acl_nfs4_strip(struct nfs4_acl *);
-extern int			acl_nfs4_xattr_pack(struct nfs4_acl *, char**);
-extern int			acl_nfs4_xattr_size(struct nfs4_acl *);
+extern size_t			acl_nfs4_xattr_pack(struct nfs4_acl *, char**);
 
 extern void			nfs4_free_acl(struct nfs4_acl *);
 extern int			nfs4_acl_is_trivial_np(struct nfs4_acl *acl, int *trivialp);
@@ -198,7 +203,12 @@ extern int			nfs4_replace_ace(struct nfs4_acl *acl, struct nfs4_ace *old_ace, st
 extern int			nfs4_replace_ace_spec(struct nfs4_acl *acl, char *from_ace_spec, char *to_ace_spec);
 extern int			nfs4_remove_file_aces(struct nfs4_acl *acl, FILE *fd);
 extern int			nfs4_remove_string_aces(struct nfs4_acl *acl, char *string);
-bool acl_nfs4_inherit_entries(struct nfs4_acl *parent_aclp, struct nfs4_acl *child_aclp, bool is_dir);
+bool				acl_nfs4_inherit_entries(struct nfs4_acl *parent_aclp, struct nfs4_acl *child_aclp, bool is_dir);
+bool 				acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
+								 struct nfs4_acl *aclp,
+								 mode_t mode, bool skip_mode,
+								 int is_dir);
+
 
 /** Get and Set ACL functions **/
 extern struct nfs4_acl * 	nfs4_acl_get_file(const char *path);

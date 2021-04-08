@@ -40,24 +40,19 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-int acl_nfs4_xattr_pack(struct nfs4_acl * acl, char** bufp)
+
+size_t acl_nfs4_xattr_pack(struct nfs4_acl * acl, char** bufp)
 {
 	struct nfs4_ace *ace = NULL;
 	nfsacl41i *nacl = NULL;
-	int buflen;
 	int ace_num;
 	int result;
 	XDR xdr = {0};
 	bool ok;
-	size_t acl_size = sizeof(nfsacl41i) + (acl->naces * sizeof(struct nfsace4i));
+	size_t acl_size = sizeof(nfsacl41i) + (acl->naces * sizeof(nfsace4i));
 	
 	if (acl == NULL || bufp == NULL) {
 		errno = EINVAL;
-		goto failed;
-	}
-
-	buflen = acl_nfs4_xattr_size(acl);
-	if (buflen < 0) {
 		goto failed;
 	}
 
@@ -123,7 +118,7 @@ int acl_nfs4_xattr_pack(struct nfs4_acl * acl, char** bufp)
 		goto free_failed;
 	}
 	free(nacl);
-	return buflen;
+	return acl_size;
 
 free_failed:
 	free(*bufp);

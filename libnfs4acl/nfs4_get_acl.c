@@ -40,16 +40,60 @@
 #include <err.h>
 #include "libacl_nfs4.h"
 
+
 static int nfs4_getxattr(const char *, const int, void *, size_t);
 
-/* returns a newly-allocated struct nfs4_acl for `path', or NULL on error. */
+
+#ifdef USE_SECURITY_NAMESPACE
+/*
+ * Non-native NFSv4 ACLs may not exist on file when we try to read
+ * them. In this case, synthesize a new NFSv4 ACL from the POSIX
+ * mode of the file.
+ */
+static struct nfs4_acl *synthesize_acl_from_mode(const char *path, int fd)
+{
+	struct stat st;
+	struct nfs4_acl *acl = NULL;
+	int error;
+	bool ok;
+
+	if (path != NULL) {
+		error = stat(path, &st);
+		if (error) {
+			warnx("%s: stat() failed", path);
+			return NULL;
+		}
+	}
+	else {
+		error = fstat(fd, &st);
+		if (error) {
+			warnx("fstat() failed");
+			return NULL;
+		}
+	}
+
+	acl = nfs4_new_acl(S_ISDIR(st.st_mode));
+	if (acl == NULL) {
+		return NULL;
+	}
+	ok = acl_nfs4_calculate_inherited_acl(NULL, acl,
+					      st.st_mode,
+					      false,
+					      S_ISDIR(st.st_mode));
+	if (!ok) {
+		nfs4_free_acl(acl);
+		return NULL;
+	}
+
+	return acl;
+}
+#endif
 
 struct nfs4_acl *do_xattr_load(const char *path, int fd,
 			       char *xattr, int size)
 {
 	struct stat st;
 	int error;
-	u32 iflags;
 	struct nfs4_acl *acl = NULL;
 
 	if (path != NULL) {
@@ -68,12 +112,8 @@ struct nfs4_acl *do_xattr_load(const char *path, int fd,
 			return NULL;
 		}
 	}
-	if (st.st_mode & S_IFDIR)
-		iflags = NFS4_ACL_ISDIR;
-	else
-		iflags = NFS4_ACL_ISFILE;
 
-	acl = acl_nfs4_xattr_load(xattr, size, iflags);
+	acl = acl_nfs4_xattr_load(xattr, size, S_ISDIR(st.st_mode));
 	if (acl == NULL)
 		warnx("acl_nfs4_xattr_load() failed");
 	return acl;
@@ -92,8 +132,16 @@ struct nfs4_acl* nfs4_acl_get_file(const char *path)
 
 	/* find necessary buffer size */
 	result = nfs4_getxattr(path, -1, NULL, 0);
+
+#ifdef USE_SECURITY_NAMESPACE
+	if ((result < 0) && (errno == ENODATA)) {
+		return synthesize_acl_from_mode(path, -1);
+	}
+#else
 	if (result < 0)
 		return NULL;
+#endif
+
 
 	xattr = malloc(result);
 	if (xattr == NULL) {
@@ -122,9 +170,20 @@ struct nfs4_acl* nfs4_acl_get_fd(int fd)
 	char *xattr = NULL;
 
 	/* find necessary buffer size */
+	fprintf(stderr, "namespace: %s\n", ACL_NFS4_XATTR);
 	result = nfs4_getxattr(NULL, fd, NULL, 0);
+
+#ifdef USE_SECURITY_NAMESPACE
+	if ((result < 0) && (errno == ENODATA)) {
+		return synthesize_acl_from_mode(NULL, fd);
+	}
+	else if (result < 0) {
+		return NULL;
+	}
+#else
 	if (result < 0)
 		return NULL;
+#endif
 
 	xattr = malloc(result);
 	if (xattr == NULL) {
@@ -147,18 +206,43 @@ struct nfs4_acl* nfs4_acl_get_fd(int fd)
 static int nfs4_getxattr(const char *path, int fd, void *value, size_t size)
 {
 	int res;
+	if ((path == NULL) && (fd == -1)) {
+		errno = EINVAL;
+		return (-1);
+	}
+
+#ifdef USE_SECURITY_NAMESPACE
+	/*
+	 * Security namespace xattr must not be used on paths with
+	 * native NFSv4 ACLs that are exposed by system namespace.
+	 */
+	if (path != NULL) {
+		res = getxattr(path, SYSTEM_XATTR, value, size);
+	}
+	if (fd) {
+		res = fgetxattr(fd, SYSTEM_XATTR, value, size);
+	}
+	if (res != -1) {
+		/*
+		 * Convert errno to ENOSYS so that we avoid
+		 * synthesizing a fake ACL from mode and simply
+		 * fail the nfs4_acl_get_*() call.
+		 */
+		warnx("nfs4xdr-acl-tools is built with option "
+		      "to write to the 'security' xattr namespace, "
+		      "but filesystem uses native NFSv4 ACLs.");
+		errno = ENOSYS;
+		return (-1);
+	}
+#endif
 
 	if (path != NULL) {
 		res = getxattr(path, ACL_NFS4_XATTR, value, size);
 	}
-	else if (fd) {
+	else {
 		res = fgetxattr(fd, ACL_NFS4_XATTR, value, size);
 	}
-	else {
-		errno = EINVAL;
-		return (-1);
-	}
-	if (res < 0) {
+	if ((res < 0) && (errno != ENODATA)) {
 		warnx("Failed to get NFSv4 ACL");
 	}
 	return res;

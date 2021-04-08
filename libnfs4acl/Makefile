@@ -86,7 +86,6 @@ LIBACL_NFS4_CFILES = \
 	acl_nfs4_set_who.c \
 	acl_nfs4_xattr_load.c \
 	acl_nfs4_xattr_pack.c \
-	acl_nfs4_xattr_size.c \
 	acl_nfs4_inheritance.c \
 	nfs4_get_acl.c \
 	nfs4_acl_spec_from_file.c \
