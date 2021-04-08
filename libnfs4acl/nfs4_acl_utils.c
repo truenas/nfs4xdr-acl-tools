@@ -36,6 +36,7 @@
  */
 
 #include <string.h>
+#include <err.h>
 #include "libacl_nfs4.h"
 
 
@@ -80,7 +81,8 @@ int nfs4_insert_ace_at(struct nfs4_acl *acl, struct nfs4_ace *ace, unsigned int 
 
 	if (acl == NULL || ace == NULL || index > acl->naces) {
 		errno = E2BIG;
-		printf("insert ace at acl; %p, ace: %p, index: [%d], naces: [%d] \n", acl, ace, index, acl ? acl->naces : 0);
+		warnx("insert ace at acl; %p, ace: %p, index: [%d], naces: [%d]\n",
+		      acl, ace, index, acl ? acl->naces : 0);
 		return -1;
 	}
 
