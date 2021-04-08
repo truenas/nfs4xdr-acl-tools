@@ -40,28 +40,19 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-int acl_nfs4_xattr_pack(struct nfs4_acl * acl, char** bufp)
+
+size_t acl_nfs4_xattr_pack(struct nfs4_acl * acl, char** bufp)
 {
 	struct nfs4_ace *ace = NULL;
 	nfsacl41i *nacl = NULL;
-	int buflen;
 	int ace_num;
 	int result;
-	int i = 0;
 	XDR xdr = {0};
 	bool ok;
-	size_t acl_size = sizeof(nfsacl41i) + (acl->naces * sizeof(struct nfsace4i));
+	size_t acl_size = sizeof(nfsacl41i) + (acl->naces * sizeof(nfsace4i));
 	
-	char* p;
-	char* who;
-
 	if (acl == NULL || bufp == NULL) {
 		errno = EINVAL;
-		goto failed;
-	}
-
-	buflen = acl_nfs4_xattr_size(acl);
-	if (buflen < 0) {
 		goto failed;
 	}
 
@@ -77,7 +68,6 @@ int acl_nfs4_xattr_pack(struct nfs4_acl * acl, char** bufp)
 	ace = nfs4_get_first_ace(acl);
 	ace_num = 1;
 	while (1) {
-		int whotype = 0;
 		if (ace == NULL) {
 			if (ace_num > acl->naces) {
 				break;
@@ -86,21 +76,13 @@ int acl_nfs4_xattr_pack(struct nfs4_acl * acl, char** bufp)
 				goto failed;
 			}
 		}
-		if (ace->whotype != 0) {
-			whotype = ace->whotype;
-		}
-		else {
-			result = acl_nfs4_get_who(ace, &whotype, &who);
-			if (result < 0) {
-				goto free_failed;
-			}
-		}
+
 		nfsace4i *nacep = &nacl->na41_aces.na41_aces_val[ace_num -1];
 		nacep->type = ace->type;
 		nacep->flag = ace->flag;
 		nacep->access_mask = ace->access_mask;
 
-		switch(whotype) {
+		switch(ace->whotype) {
 		case NFS4_ACL_WHO_OWNER:
 			nacep->iflag |= ACEI4_SPECIAL_WHO;
 			nacep->who = ACE4_SPECIAL_OWNER;
@@ -115,8 +97,10 @@ int acl_nfs4_xattr_pack(struct nfs4_acl * acl, char** bufp)
 			break;
 		case NFS4_ACL_WHO_NAMED:
 			nacep->iflag = 0;
-			nacep->who = atoi(who);
-
+			result = acl_nfs4_get_who(ace, &nacep->who, NULL, 0);
+			if (result != 0) {
+				goto free_failed;
+			}
 		}
 #ifdef NFS4_DEBUG
 		fprintf(stderr, "who: 0x%08x, iflag: 0x%08x, type: 0x%08x "
@@ -134,7 +118,7 @@ int acl_nfs4_xattr_pack(struct nfs4_acl * acl, char** bufp)
 		goto free_failed;
 	}
 	free(nacl);
-	return buflen;
+	return acl_size;
 
 free_failed:
 	free(*bufp);

@@ -59,6 +59,7 @@
 #define INSERT_ACTION		4
 #define EDIT_ACTION		5
 #define STRIP_ACTION		6
+#define SET_FLAGS_ACTION	7
 
 /* Walks */
 #define DEFAULT_WALK		0	/* Follow symbolic link args, Skip links in subdirectories */
@@ -96,6 +97,7 @@ static struct option long_options[] = {
 	{ "remove-spec",	1, 0, 'x' },
 	{ "remove-file",	1, 0, 'X' },
 	{ "modify",		1, 0, 'm' },
+	{ "strip",		0, 0, 's' },
 	{ "edit",		0, 0, 'e' },
 	{ "test",		0, 0, 't' },
 	{ "help",		0, 0, 'h' },
@@ -142,7 +144,7 @@ int main(int argc, char **argv)
 		return err;
 	}
 
-	while ((opt = getopt_long(argc, argv, "-:a:A:s:S:x:X:m:bethvHRPL", long_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "-:a:A:s:S:x:X:m:p:bethvHRPL", long_options, NULL)) != -1) {
 		switch (opt) {
 			case 'a':
 				mod_string = optarg;
@@ -161,9 +163,6 @@ int main(int argc, char **argv)
 					/* oops it wasn't an ace_index; reset */
 					optind--;
 					ace_index = -1;
-				} else if (ace_index == 0) {
-					fprintf(stderr, "Sorry, valid indices start at '1'.\n");
-					goto out;
 				}
 				break;
 
@@ -179,6 +178,11 @@ int main(int argc, char **argv)
 			case 'b':
 				assert_wu_wei(action);
 				action = STRIP_ACTION;
+				break;
+			case 'p':
+				assert_wu_wei(action);
+				action = SET_FLAGS_ACTION;
+				mod_string = optarg;
 				break;
 			case 'x':
 				ace_index = strtoul_reals(optarg, 10);
@@ -363,6 +367,8 @@ static int do_apply_action(const char *path, const struct stat *_st)
 	int err = 0;
 	struct nfs4_acl *acl = NULL, *newacl;
 	struct stat stats, *st = (struct stat *)_st;
+	nfs4_acl_aclflags_t aclflags = 0;
+	bool ok;
 
 	if (st == NULL) {
 		if (stat(path, &stats)) {
@@ -375,7 +381,7 @@ static int do_apply_action(const char *path, const struct stat *_st)
 	if (action == SUBSTITUTE_ACTION)
 		acl = nfs4_new_acl(S_ISDIR(st->st_mode));
 	else
-		acl = nfs4_acl_for_path(path);
+		acl = nfs4_acl_get_file(path);
 
 	if (acl == NULL) {
 		fprintf(stderr, "Failed to instantiate ACL.\n");
@@ -385,9 +391,11 @@ static int do_apply_action(const char *path, const struct stat *_st)
 	switch (action) {
 	case INSERT_ACTION:
 		/* default to prepending */
-		if (ace_index < 1)
-			ace_index = 1;
-		if (nfs4_insert_string_aces(acl, mod_string, (ace_index - 1))) {
+		if (ace_index < 0) {
+			ace_index = 0;
+		}
+		fprintf(stderr, "ace_index: %d, mod_string: %s\n", ace_index, mod_string);
+		if (nfs4_insert_string_aces(acl, mod_string, ace_index)) {
 			fprintf(stderr, "Failed while inserting ACE(s) (at index %d).\n", ace_index);
 			goto failed;
 		}
@@ -395,12 +403,11 @@ static int do_apply_action(const char *path, const struct stat *_st)
 
 	case REMOVE_ACTION:
 		if (ace_index != -1) {
-			/* "ace_index - 1" because we access the ACL zero-based-wise, but the CLI arg is one-based. */
-			if ((ace_index - 1) > acl->naces) {
+			if (ace_index > acl->naces) {
 				fprintf(stderr, "Index %u is out of range (%d ACEs in ACL)\n", ace_index, acl->naces);
 				goto failed;
 			}
-			if (nfs4_remove_ace_at(acl, (ace_index - 1))) {
+			if (nfs4_remove_ace_at(acl, ace_index)) {
 				fprintf(stderr, "Failed to remove ACE at index %u.\n", ace_index);
 				goto failed;
 			}
@@ -440,13 +447,21 @@ static int do_apply_action(const char *path, const struct stat *_st)
 		}
 		acl = newacl;
 		break;
+
+	case SET_FLAGS_ACTION:
+		ok = nfs4_aclflag_from_text(mod_string, &aclflags);
+		if (!ok) {
+			goto failed;
+		}
+		acl->aclflags4 = aclflags;
+		break;
 	}
 
 	if (is_test) {
 		fprintf(stderr, "## Test mode only - the resulting ACL for \"%s\": \n", path);
 		nfs4_print_acl(stdout, acl);
 	} else
-		err = nfs4_set_acl(acl, path);
+		err = nfs4_acl_set_file(acl, path);
 
 out:
 	nfs4_free_acl(acl);
@@ -478,6 +493,7 @@ static struct nfs4_acl* edit_ACL(struct nfs4_acl *acl, const char *path, const s
 		fprintf(tmp_fp, "## Editing NFSv4 ACL for directory: %s\n", path);
 	else
 		fprintf(tmp_fp, "## Editing NFSv4 ACL for file: %s\n", path);
+
 	nfs4_print_acl(tmp_fp, acl);
 	rewind(tmp_fp);
 
@@ -559,6 +575,7 @@ static void __usage(const char *name, int is_ef)
 	"   -s acl_spec		 set ACL to acl_spec (replaces existing ACL)\n"
 	"   -S file		 read ACL entries to set from file\n"
 	"   -b file		 strip ACL entry from the file\n"
+	"   -p aclflags file	 set specified ACL flags on file\n"
 	"   -e, --edit 		 edit ACL in $EDITOR (DEFAULT: " EDITOR "); save on clean exit\n"
 	"   -m from_ace to_ace	 modify in-place: replace 'from_ace' with 'to_ace'\n"
 	"   --version		 print version and exit\n"

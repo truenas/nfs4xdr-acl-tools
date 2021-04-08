@@ -47,12 +47,11 @@ struct nfs4_acl * acl_nfs4_xattr_load(char *xattr_v, int xattr_size, u32 is_dir)
 	struct nfs4_ace *ace = NULL;
 	struct nfsacl41i *nacl = NULL;
 	char *bufp = xattr_v;
-	int bufs = xattr_size;
 	u32 ace_n;
-	u32	wholen;
-	int d_ptr;
 	u32 num_aces;
-	u32 type, flag, access_mask;
+	nfs4_acl_type_t type;
+	nfs4_acl_flag_t flag;
+	nfs4_acl_perm_t access_mask;
 	size_t acl_size;
 	XDR xdr = {0};
 	bool ok;
@@ -86,23 +85,27 @@ struct nfs4_acl * acl_nfs4_xattr_load(char *xattr_v, int xattr_size, u32 is_dir)
 		nfsace4i *nacep = &nacl->na41_aces.na41_aces_val[ace_n]; 
 		char who[20] = {0};
 		/* Get the acl type */
-		type = (u32)nacep->type;
-		flag = (u32)nacep->flag;
-		access_mask = (u32)nacep->access_mask;
+		type = (nfs4_acl_type_t)nacep->type;
+		flag = (nfs4_acl_flag_t)nacep->flag;
+		access_mask = (nfs4_acl_perm_t)nacep->access_mask;
+		nfs4_acl_who_t whotype;
 
 		if (nacep->iflag & ACEI4_SPECIAL_WHO) {
 			switch(nacep->who) {
 			case ACE4_SPECIAL_OWNER:
+				whotype = NFS4_ACL_WHO_OWNER;
 				snprintf(who, sizeof(who), "%s", NFS4_ACL_WHO_OWNER_STRING);
 				break;
 			case ACE4_SPECIAL_GROUP:
+				whotype = NFS4_ACL_WHO_GROUP;
 				snprintf(who, sizeof(who), "%s", NFS4_ACL_WHO_GROUP_STRING);
 				break;
 			case ACE4_SPECIAL_EVERYONE:
+				whotype = NFS4_ACL_WHO_EVERYONE;
 				snprintf(who, sizeof(who), "%s", NFS4_ACL_WHO_EVERYONE_STRING);
 				break;
 			default:
-				printf("Unknown id: 0x%08x\n", nacep->who);
+				fprintf(stderr, "Unknown id: 0x%08x\n", nacep->who);
 				errno = EINVAL;
 				free(nacl);
 				goto err1;
@@ -110,9 +113,10 @@ struct nfs4_acl * acl_nfs4_xattr_load(char *xattr_v, int xattr_size, u32 is_dir)
 
 		}
 		else {
+			whotype = NFS4_ACL_WHO_NAMED;
 			snprintf(who, sizeof(who), "%d", nacep->who);
 		}
-		ace = nfs4_new_ace(is_dir, type, flag, access_mask, acl_nfs4_get_whotype(who), who);
+		ace = nfs4_new_ace(is_dir, type, flag, access_mask, whotype, who);
 		if (ace == NULL) {
 			free(nacl);
 			goto err1;

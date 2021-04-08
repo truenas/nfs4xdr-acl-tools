@@ -36,6 +36,7 @@
  */
 
 #include <string.h>
+#include <err.h>
 #include "libacl_nfs4.h"
 
 
@@ -58,33 +59,41 @@ inline struct nfs4_ace* nfs4_get_next_ace(struct nfs4_ace **ace)
 
 struct nfs4_ace* nfs4_get_ace_at(struct nfs4_acl *acl, unsigned int index)
 {
-	struct nfs4_ace *ace;
+	struct nfs4_ace *ace = NULL;
 	int i;
 
-	if (index >= acl->naces)
+	if (index >= acl->naces) {
+		errno = E2BIG;
 		return NULL;
+	}
 
 	ace = nfs4_get_first_ace(acl);
-	for (i = 0; i < index; i++)
+	for (i = 0; i < index; i++) {
 		ace = nfs4_get_next_ace(&ace);
+	}
 
 	return ace;
 }
 
 int nfs4_insert_ace_at(struct nfs4_acl *acl, struct nfs4_ace *ace, unsigned int index)
 {
-	struct nfs4_ace *ap;
+	struct nfs4_ace *ap = NULL;
 
-	if (acl == NULL || ace == NULL || index > acl->naces)
+	if (acl == NULL || ace == NULL || index > acl->naces) {
+		errno = E2BIG;
+		warnx("insert ace at acl; %p, ace: %p, index: [%d], naces: [%d]\n",
+		      acl, ace, index, acl ? acl->naces : 0);
 		return -1;
+	}
 
 	if (index == 0) {
 		TAILQ_INSERT_HEAD(&acl->ace_head, ace, l_ace);
 	} else if (index == acl->naces) {
 		TAILQ_INSERT_TAIL(&acl->ace_head, ace, l_ace);
 	} else {
-		if ((ap = nfs4_get_ace_at(acl, index - 1)) == NULL)
+		if ((ap = nfs4_get_ace_at(acl, index - 1)) == NULL) {
 			return -1;
+		}
 
 		TAILQ_INSERT_AFTER(&acl->ace_head, ap, ace, l_ace);
 	}
@@ -126,49 +135,36 @@ int nfs4_replace_ace(struct nfs4_acl *acl, struct nfs4_ace *old_ace, struct nfs4
  */
 int nfs4_replace_ace_spec(struct nfs4_acl *acl, char *from_ace_spec, char *to_ace_spec)
 {
-	struct nfs4_ace *from_ace, *to_ace, *orig_ace, *new_ace;
-	int err = -1;
+	struct nfs4_ace *from_ace = NULL, *to_ace = NULL, *orig_ace = NULL, *new_ace = NULL;
 
 	if (acl == NULL)
-		goto out;
+		return (-1);
 
-	if ((from_ace = nfs4_ace_from_string(from_ace_spec, acl->is_directory)) == NULL)
-		goto out;
+	from_ace = nfs4_ace_from_text(acl->is_directory, from_ace_spec);
+	if (from_ace == NULL) {
+		return (-1);
+	}
 
-	if ((to_ace = nfs4_ace_from_string(to_ace_spec, acl->is_directory)) == NULL)
-		goto free_from;
+
+	to_ace = nfs4_ace_from_text(acl->is_directory, to_ace_spec);
+	if (to_ace == NULL) {
+		free(from_ace);
+		return (-1);
+	}
 
 	for (orig_ace = nfs4_get_first_ace(acl); orig_ace != NULL; nfs4_get_next_ace(&orig_ace)) {
-		if (!nfs4_ace_cmp(from_ace, orig_ace)) {
+		if (!ace_is_equal(from_ace, orig_ace)) {
 			new_ace = nfs4_new_ace(acl->is_directory, to_ace->type, to_ace->flag,
 					to_ace->access_mask, to_ace->whotype, to_ace->who);
-			if (new_ace == NULL)
-				goto frito;
+			if (new_ace == NULL) {
+				free(from_ace);
+				free(to_ace);
+				return (-1);
+			}
 			nfs4_replace_ace(acl, orig_ace, new_ace);
 			free(orig_ace);
 			orig_ace = new_ace; /* so the for-loop turns over right */
 		}
 	}
-	err = 0;
-frito:
-	free(to_ace);
-free_from:
-	free(from_ace);
-out:
-	return err;
-}
-
-/* XXX: for now, just doing equality testing.
- *      if we end up going for a canonical ordering, this'll expand.
- *      assumes no NULLs.
- *      behavior `a la strcmp().
- */
-int nfs4_ace_cmp(struct nfs4_ace *lhs, struct nfs4_ace *rhs)
-{
-	if ((lhs->type == rhs->type)
-			&& (lhs->flag == rhs->flag)
-			&& (lhs->access_mask == rhs->access_mask)
-			&& (!strncmp(lhs->who, rhs->who, NFS4_MAX_PRINCIPALSIZE)))
-		return 0;
-	return 1;
+	return 0;
 }

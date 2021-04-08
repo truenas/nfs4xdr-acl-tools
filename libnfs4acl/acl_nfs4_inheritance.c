@@ -63,14 +63,32 @@ _print_diff_aces(struct nfs4_ace *a, struct nfs4_ace *b)
 	fprintf(stderr, "\n");
 }
 
+bool
+ace_is_equal(struct nfs4_ace *entrya, struct nfs4_ace *entryb)
+{
+	if ((entrya->type != entryb->type) ||
+	    (entrya->whotype != entryb->whotype) ||
+	    (entrya->flag != entryb->flag) ||
+	    (entrya->access_mask != entryb->access_mask) ||
+	    ((strcmp(entrya->who, entryb->who) != 0))) {
+#ifdef NFS4_DEBUG
+		_print_diff_aces(entrya, entryb);
+#endif
+		return false;
+	}
+	return true;
+}
+
 /*
  * Compare two ACL structs and determine whether they are
  * equal.
  */
-static bool
-_aces_are_equal(struct nfs4_acl *a, struct nfs4_acl *b)
+bool
+aces_are_equal(struct nfs4_acl *a, struct nfs4_acl *b)
 {
 	struct nfs4_ace *entrya, *entryb;
+	bool is_equal;
+
 	if (a->naces != b->naces) {
 #ifdef NFS4_DEBUG
 		fprintf(stderr, "COUNT: %d - %d\n",
@@ -84,14 +102,8 @@ _aces_are_equal(struct nfs4_acl *a, struct nfs4_acl *b)
 	     ((entrya != NULL) || (entryb != NULL));
 	     (entrya = nfs4_get_next_ace(&entrya)),
 	     ((entryb = nfs4_get_next_ace(&entryb)))) {
-		if ((entrya->type != entryb->type) ||
-		    (entrya->whotype != entryb->whotype) ||
-		    (entrya->flag != entryb->flag) ||
-		    (entrya->access_mask != entryb->access_mask) ||
-		    ((strcmp(entrya->who, entryb->who) != 0))) {
-#ifdef NFS4_DEBUG
-			_print_diff_aces(entrya, entryb);
-#endif
+		is_equal = ace_is_equal(entrya, entryb);
+		if (!is_equal) {
 			return false;
 		}
 	}
@@ -115,7 +127,11 @@ _aces_are_equal(struct nfs4_acl *a, struct nfs4_acl *b)
 bool acl_nfs4_inherit_entries(struct nfs4_acl *parent_aclp,
 			      struct nfs4_acl *child_aclp, bool is_dir)
 {
-	uint ret, flags, tag, type, a_mask;
+	uint ret;
+	nfs4_acl_flag_t flags;
+	nfs4_acl_who_t tag;
+	nfs4_acl_type_t type;
+	nfs4_acl_perm_t a_mask;
 	struct nfs4_ace *new_ace = NULL;
 	struct nfs4_ace *ace = NULL;
 
@@ -178,7 +194,7 @@ bool acl_nfs4_inherit_entries(struct nfs4_acl *parent_aclp,
 		 *    this directory.
 		 * 2) This is a file - inheritance flags are invalid on files.
 		 */
-		if (flags & NFS4_ACE_NO_PROPAGATE_INHERIT_ACE || is_dir) {
+		if ((flags & NFS4_ACE_NO_PROPAGATE_INHERIT_ACE) || !is_dir) {
 			flags &= ~(NFS4_ACE_NO_PROPAGATE_INHERIT_ACE |
 				   NFS4_ACE_DIRECTORY_INHERIT_ACE |
 				   NFS4_ACE_FILE_INHERIT_ACE |
@@ -220,8 +236,8 @@ bool acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 				      mode_t mode, bool skip_mode,
 				      int is_dir)
 {
-	uint user_allow_first = 0, user_deny = 0, group_deny = 0;
-	uint user_allow, group_allow, everyone_allow;
+	nfs4_acl_perm_t user_allow_first = 0, user_deny = 0, group_deny = 0;
+	nfs4_acl_perm_t user_allow, group_allow, everyone_allow;
 	struct nfs4_ace *new_ace = NULL;
 	bool ok;
 	int ret;
@@ -543,7 +559,7 @@ struct nfs4_acl *acl_nfs4_strip(struct nfs4_acl *acl)
  * This is accomplished by comparing a stripped copy of the ACL with
  * the original.
  */
-int acl_is_trivial_np(struct nfs4_acl *acl, int *trivialp)
+int nfs4_acl_is_trivial_np(struct nfs4_acl *acl, int *trivialp)
 {
 	struct nfs4_acl *stripped = NULL;
 	bool is_equal;
@@ -556,7 +572,7 @@ int acl_is_trivial_np(struct nfs4_acl *acl, int *trivialp)
 	if (stripped == NULL) {
 		return -1;
 	}
-	is_equal = _aces_are_equal(acl, stripped);
+	is_equal = aces_are_equal(acl, stripped);
 	nfs4_free_acl(stripped);
 	*trivialp = (is_equal) ? 1 : 0;
 	return 0;

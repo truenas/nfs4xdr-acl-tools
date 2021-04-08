@@ -40,15 +40,56 @@
  */
 
 #include <stdio.h>
+#include <pwd.h>
+#include <grp.h>
 #include "libacl_nfs4.h"
 
-int acl_nfs4_set_who(struct nfs4_ace* ace, int type, char* who)
-{
-	char *iwho = NULL;
-	int wholen;
+/*
+ * `who` may be a uid/gid string or it may
+ * be an actual user or group name. First see if
+ * entire `who` string is numeric. If it's not,
+ * then proceed with converting using normal
+ * passwd / group methods. Returns (uid_t -1) on
+ * error. This should never be set on-disk for a
+ * regular username / group so it's an acceptable
+ * error return here.
+ */
+static uid_t _get_id(char *who, bool is_group) {
+	uid_t out;
+	unsigned long id;
+	char *remainder = NULL;
+	struct passwd *pwd = NULL;
+	struct group *grp = NULL;
 
-	if (ace == NULL)
+	id = strtoul(who, &remainder, 10);
+	if (*remainder == '\0') {
+		return (uid_t)id;
+	}
+	if (is_group) {
+		grp = getgrnam(who);
+		if (grp == NULL) {
+			return (uid_t)-1;
+		}
+		out = grp->gr_gid;
+	}
+	else {
+		pwd = getpwnam(who);
+		if (pwd == NULL) {
+			return (uid_t)-1;
+		}
+		out = pwd->pw_uid;
+
+	}
+	return out;
+}
+
+int acl_nfs4_set_who(struct nfs4_ace* ace, int type, char *who)
+{
+	uid_t id;
+
+	if (ace == NULL) {
 		goto inval_failed;
+	}
 
 	switch (type) {
 		case NFS4_ACL_WHO_NAMED:
@@ -56,27 +97,29 @@ int acl_nfs4_set_who(struct nfs4_ace* ace, int type, char* who)
 				fprintf(stderr, "ERROR: named user seems to have no name.\n");
 				goto inval_failed;
 			}
-			iwho = who;
+			id = _get_id(who, NFS4_IS_GROUP(ace->flag));
+			if (id == -1) {
+				fprintf(stderr, "acl_nfs4_set_who(): name [%s] "
+					"is invalid\n", who);
+				goto inval_failed;
+			}
+			snprintf(ace->who, NFS4_MAX_PRINCIPALSIZE, "%d", id);
 			break;
 		case NFS4_ACL_WHO_OWNER:
-			iwho = NFS4_ACL_WHO_OWNER_STRING;
+			snprintf(ace->who, NFS4_MAX_PRINCIPALSIZE,
+				 NFS4_ACL_WHO_OWNER_STRING);
 			break;
 		case NFS4_ACL_WHO_GROUP:
-			iwho = NFS4_ACL_WHO_GROUP_STRING;
+			snprintf(ace->who, NFS4_MAX_PRINCIPALSIZE,
+				 NFS4_ACL_WHO_GROUP_STRING);
 			break;
 		case NFS4_ACL_WHO_EVERYONE:
-			iwho = NFS4_ACL_WHO_EVERYONE_STRING;
+			snprintf(ace->who, NFS4_MAX_PRINCIPALSIZE,
+				 NFS4_ACL_WHO_EVERYONE_STRING);
 			break;
 		default:
 			goto inval_failed;
 	}
-
-	wholen = strlen(iwho);
-	if (wholen < 1)
-		goto inval_failed;
-
-	memset(ace->who, '\0', NFS4_MAX_PRINCIPALSIZE);
-	strcpy(ace->who, iwho);
 	ace->whotype = type;
 
 	return 0;
@@ -85,4 +128,3 @@ inval_failed:
 	errno = EINVAL;
 	return -1;
 }
-

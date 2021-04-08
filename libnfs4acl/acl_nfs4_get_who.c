@@ -42,57 +42,92 @@
  */
 
 #include "libacl_nfs4.h"
+#include <pwd.h>
+#include <grp.h>
 
-int acl_nfs4_get_who(struct nfs4_ace* ace, int* type, char** who)
-{
-	int itype;
-	char* iwho = NULL;
-	int wholen;
 
-	if (ace == NULL || ace->who == NULL)
-		goto inval_failed;
-
-	itype = acl_nfs4_get_whotype(ace->who);
-	if (type != NULL) {
-		*type = itype;
+static char *_get_name(uid_t id, bool is_group) {
+	char *out = NULL;
+	struct passwd *pwd = NULL;
+	struct group *grp = NULL;
+	if (is_group) {
+		grp = getgrgid(id);
+		if (grp == NULL) {
+			return NULL;
+		}
+		out = grp->gr_name;
 	}
+	else {
+		pwd = getpwuid(id);
+		if (pwd == NULL) {
+			return NULL;
+		}
+		out = pwd->pw_name;
 
-	if(who == NULL)
-		return 0;
-
-	switch(itype) {
-		case NFS4_ACL_WHO_NAMED:
-			iwho = ace->who;
-			break;
-		case NFS4_ACL_WHO_OWNER:
-			iwho = NFS4_ACL_WHO_OWNER_STRING;
-			break;
-		case NFS4_ACL_WHO_GROUP:
-			iwho = NFS4_ACL_WHO_GROUP_STRING;
-			break;
-		case NFS4_ACL_WHO_EVERYONE:
-			iwho = NFS4_ACL_WHO_EVERYONE_STRING;
-			break;
-		default:
-			goto inval_failed;
 	}
-
-	wholen = strlen(iwho);
-	if (wholen < 0)
-		goto inval_failed;
-
-	(*who) = (char *)malloc(sizeof(char) * (wholen + 1));
-	if ((*who) == NULL) {
-		errno = ENOMEM;
-		goto failed;
-	}
-	strcpy((*who), iwho);
-
-	return 0;
-
-inval_failed:
-	errno = EINVAL;
-failed:
-	return -1;
+	return out;
 }
 
+int acl_nfs4_get_who(struct nfs4_ace *ace, uid_t *_who_id, char *_who_str, size_t buf_size)
+{
+	char *who_str = NULL;
+	uid_t who_id = -1;
+	size_t wholen, ncopied;
+
+	if (ace == NULL || ace->who == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	switch(ace->whotype) {
+	case NFS4_ACL_WHO_NAMED:
+		who_id = strtol(ace->who, NULL, 10);
+		/*
+		 * If who string is requested, then
+		 * try conversion of id to name. If this fails
+		 * return numeric id as a string.
+		 */
+		if (_who_str != NULL) {
+			who_str = _get_name(who_id, NFS4_IS_GROUP(ace->flag));
+			if (who_str == NULL) {
+				who_str = ace->who;
+			}
+		}
+		break;
+	case NFS4_ACL_WHO_OWNER:
+		who_str = NFS4_ACL_WHO_OWNER_STRING;
+		who_id = -1;
+		break;
+	case NFS4_ACL_WHO_GROUP:
+		who_str = NFS4_ACL_WHO_GROUP_STRING;
+		who_id = -1;
+		break;
+	case NFS4_ACL_WHO_EVERYONE:
+		who_str = NFS4_ACL_WHO_EVERYONE_STRING;
+		who_id = -1;
+		break;
+	default:
+		errno = EINVAL;
+		return -1;
+	}
+	if (_who_id != NULL) {
+		*_who_id = who_id;
+	}
+
+	if (_who_str == NULL) {
+		return 0;
+	}
+
+	wholen = strlen(who_str);
+	if (wholen > buf_size) {
+		errno = ERANGE;
+		return -1;
+	}
+	ncopied = strlcpy(_who_str, who_str, buf_size);
+	if (ncopied != wholen) {
+		fprintf(stderr, "acl_nfs4_get_who(): truncated who_str\n");
+		errno = EINVAL;
+		return -1;
+	}
+	return 0;
+}
