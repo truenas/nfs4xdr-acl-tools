@@ -56,12 +56,14 @@
 #define	WA_FORCE		0x00000400	/* force */
 #define	WA_INHERIT		0x00000800	/* do nfs41-style auto-inheritance */
 #define	WA_POSIXACL		0x00001000	/* clone POSIXACL */
+#define	WA_MAYCHMOD		0x00002000	/* strip POSIXACL and chmod */
 
 #define	WA_OP_SET	(WA_CLONE|WA_STRIP|WA_CHOWN|WA_RESTORE|WA_INHERIT)
 #define	WA_OP_CHECK(flags, bit) ((flags & ~bit) & WA_OP_SET)
 #define IS_RECURSIVE(x) (x & WA_RECURSIVE)
 #define IS_VERBOSE(x) (x & WA_VERBOSE)
 #define IS_POSIXACL(x) (x & WA_POSIXACL)
+#define MAY_CHMOD(x) (x & WA_MAYCHMOD)
 
 #define	MAX_ACL_DEPTH		2
 
@@ -85,6 +87,7 @@ struct windows_acl_info {
 
 char *posixacl = NULL;
 size_t posixacl_size = 0;
+mode_t posixacl_mode = 0;
 
 struct {
 	const char *str;
@@ -167,6 +170,7 @@ usage(char *path)
 		"    -s <source>                    # source (if cloning ACL). If none specified then ACL taken from -p\n"
 		"    -p <path>                      # path to set\n"
 		"    -P                             # perform actions on POSIX1e ACL\n"
+		"    -C                             # may strip and chmod() in POSIX1e ACL clone if no default ACL on path.\n"
 		"    -r                             # recursive\n"
 		"    -v                             # verbose\n"
 		"    -t                             # trial run - makes no changes\n"
@@ -444,6 +448,24 @@ set_acl_posix(struct windows_acl_info *w, FTSENT *file)
 		fprintf(stdout, "%s\n", file->fts_path);
 	}
 
+	if (!posixacl && MAY_CHMOD(w->flags)) {
+		error = remove_acl_posix(w, file);
+		if (error) {
+			return (error);
+		}
+		if ((file->fts_statp->st_mode & ALLPERMS) == posixacl_mode) {
+			/* mode is already correct */
+			return (0);
+		}
+		error = chmod(file->fts_accpath, posixacl_mode);
+		if (error) {
+			warnx("%s: chmod() to [0o%o] failed: %s\n",
+			      file->fts_accpath, posixacl_mode,
+			      strerror(errno));
+			return (-1);
+		}
+		return (0);
+	}
 
 	if (S_ISDIR(file->fts_statp->st_mode)) {
 		nwritten = setxattr(file->fts_accpath,
@@ -708,12 +730,14 @@ do_action(struct windows_acl_info *w, FTS *ftsp, FTSENT *entry, int action)
 			rval = 0;
 			break;
 		}
-		if (chown(entry->fts_accpath, w->uid, w->gid) < 0) {
-			warn("%s: chown() failed", entry->fts_accpath);
-			rval = -1;
-		}
 		if (IS_VERBOSE(w->flags))
 			fprintf(stdout, "%s\n", entry->fts_accpath);
+
+		rval = chown(entry->fts_accpath, w->uid, w->gid);
+		if (rval < 0) {
+			warn("%s: chown() failed", entry->fts_accpath);
+		}
+		break;
 
 	/*
 	 * Generates inherited ACLs up to two levels deep and replaces existing
@@ -952,17 +976,16 @@ get_posix_acl(const char *path)
 	int acl_size = 0;
 	acl_size = getxattr(path, "system.posix_acl_default", NULL, 0);
 	if (acl_size == -1) {
-		return (acl_size);
+		return (-1);
 	}
 	posixacl = malloc(acl_size);
 	if (posixacl == NULL) {
-		return (-1);
+		errx(1, "malloc() failed");
 	}
 	posixacl_size = getxattr(path, "system.posix_acl_default",
 				 posixacl, acl_size);
 	if (posixacl_size == -1) {
-		free(posixacl);
-		return (-1);
+		errx(1, "gextattr() failed to get default ACL.");
 	}
 	return (0);
 }
@@ -971,13 +994,24 @@ static int
 prepare_clone(struct windows_acl_info *w)
 {
 	int error;
+	struct stat st;
 	struct nfs4_acl	*source_acl = NULL;
+	warnx("flags: 0x%08x\n", w->flags);
 	if (IS_POSIXACL(w->flags)) {
 		error = get_posix_acl(w->source);
-		if (error) {
-			warnx("%s: failed to get POSIX1e ACL: %s",
-			      w->source, strerror(errno));
-			return (1);
+		if (error & MAY_CHMOD(w->flags)) {
+			error = stat(w->source, &st);
+			if (error) {
+				errx(1, "%s: stat() failed. Unable "
+				     "to prepare clone action",
+				     w->source);
+			}
+			posixacl_mode = (st.st_mode & ALLPERMS);
+		}
+		else if (error) {
+			warnx("%s: No default ACL present on file. "
+			      "Nothing to inherit.", w->source);
+			return (-1);
 		}
 		return (0);
 	}
@@ -985,17 +1019,17 @@ prepare_clone(struct windows_acl_info *w)
 	if (source_acl == NULL) {
 		warnx("%s: acl_get_file() failed: %s",
 		      w->source, strerror(errno));
-		return (1);
+		return (-1);
 	}
 
 	w->source_acl = acl_nfs4_copy_acl(source_acl);
 	if (calculate_inherited_acl(w, w->source_acl, 0) != 0) {
 		free_windows_acl_info(w);
-		return (1);
+		return (-1);
 	}
 	if (calculate_inherited_acl(w, theacls[0].dacl, 1) != 0) {
 		free_windows_acl_info(w);
-		return (1);
+		return (-1);
 	}
 	return (0);
 }
@@ -1013,8 +1047,7 @@ main(int argc, char **argv)
 	}
 
 	w = new_windows_acl_info();
-
-	while ((ch = getopt(argc, argv, "a:O:G:c:s:p:Prftvx")) != -1) {
+	while ((ch = getopt(argc, argv, "a:O:G:c:s:p:CPrftvx")) != -1) {
 		switch (ch) {
 			case 'a': {
 				int action = get_action(optarg);
@@ -1050,6 +1083,10 @@ main(int argc, char **argv)
 
 			case 'P':
 				w->flags |= WA_POSIXACL;
+				break;
+
+			case 'C':
+				w->flags |= WA_MAYCHMOD;
 				break;
 
 			case 'r':
