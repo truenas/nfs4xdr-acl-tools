@@ -72,7 +72,7 @@ static const struct {
 static const struct {
 	nfs4_acl_aclflags_t flag;
 	char *name;
-} aclflags2txt[] = {	
+} aclflags2txt[] = {
 	{ ACL_AUTO_INHERIT, "AUTOINHERIT"},
 	{ ACL_PROTECTED, "PROTECTED"},
 	{ ACL_DEFAULTED, "DEFAULTED"},
@@ -87,7 +87,7 @@ who_to_json(json_t *_parent, struct nfs4_ace *entry, bool numeric)
 	int who_id = -1;
 
 	switch (entry->whotype) {
-	case NFS4_ACL_WHO_NAMED: 
+	case NFS4_ACL_WHO_NAMED:
 		tag = NFS4_IS_GROUP(entry->flag) ? "group" : "user";
 		if (numeric) {
 			error = acl_nfs4_get_who(entry, &who_id, NULL, 0);
@@ -134,7 +134,7 @@ who_to_json(json_t *_parent, struct nfs4_ace *entry, bool numeric)
 	return (0);
 }
 
-static int 
+static int
 perms_to_json(json_t *_parent, nfs4_acl_perm_t access_mask, bool verbose)
 {
 	int error, i;
@@ -179,14 +179,14 @@ perms_to_json(json_t *_parent, nfs4_acl_perm_t access_mask, bool verbose)
 			}
 			goto done;
 		}
-		
+
 	}
 	for (i = 0; i < ARRAY_SIZE(perms2txt); i++) {
 		error = json_object_set_new(
 		    perms,
 		    perms2txt[i].name,
 		    json_boolean(access_mask & perms2txt[i].perm ? true : false));
-		
+
 		if (error) {
 			return (error);
 		}
@@ -208,7 +208,7 @@ flags_to_json(json_t *_parent, nfs4_acl_flag_t flagset, bool verbose)
 	}
 	if (!verbose) {
 		if (flagset == (NFS4_ACE_DIRECTORY_INHERIT_ACE |
-				NFS4_ACE_FILE_INHERIT_ACE)) { 
+				NFS4_ACE_FILE_INHERIT_ACE)) {
 			basic = json_string("INHERIT");
 			if (basic == NULL) {
 				return (-1);
@@ -227,7 +227,7 @@ flags_to_json(json_t *_parent, nfs4_acl_flag_t flagset, bool verbose)
 			}
 			goto done;
 		}
-		
+
 	}
 
 	for (i = 0; i < ARRAY_SIZE(flags2txt); i++) {
@@ -235,12 +235,12 @@ flags_to_json(json_t *_parent, nfs4_acl_flag_t flagset, bool verbose)
 		    flags,
 		    flags2txt[i].name,
 		    json_boolean(flagset & flags2txt[i].flag ? true : false));
-		
+
 		if (error) {
 			return (error);
 		}
 	}
-	
+
 done:
 	error = json_object_set_new(_parent, "flags", flags);
 	return (error);
@@ -279,7 +279,7 @@ type_to_json(json_t *_parent, nfs4_acl_type_t _type)
 
 	error = json_object_set_new(_parent, "type", acl_type);
 
-	return (error);	
+	return (error);
 }
 
 static int
@@ -298,7 +298,7 @@ aclflags_to_json(json_t *_parent, nfs4_acl_aclflags_t _flags)
 		    nfs41_flags,
 		    aclflags2txt[i].name,
 		    json_boolean(_flags & aclflags2txt[i].flag ? true : false));
-		
+
 		if (error) {
 			return (error);
 		}
@@ -373,7 +373,7 @@ json_t
 	if (dacl == NULL) {
 		json_decref(jsout);
 		return (NULL);
-	}	
+	}
 
 	for (ace = nfs4_get_first_ace(aclp); ace != NULL;
 	     ace = nfs4_get_next_ace(&ace)) {

@@ -78,7 +78,7 @@ nfs4_print_acl_json(char *path, int flags)
 
 	error = json_object_set_new(json_acl,
 	    "uid",
-	    json_integer(st.st_uid)); 
+	    json_integer(st.st_uid));
 	if (error) {
 		json_decref(json_acl);
 		warnx("failed to add uid to JSON output");
@@ -87,7 +87,7 @@ nfs4_print_acl_json(char *path, int flags)
 
 	error = json_object_set_new(json_acl,
 	    "gid",
-	    json_integer(st.st_uid)); 
+	    json_integer(st.st_uid));
 	if (error) {
 		json_decref(json_acl);
 		warnx("failed to add gid to JSON output");
@@ -96,7 +96,7 @@ nfs4_print_acl_json(char *path, int flags)
 
 	error = json_object_set_new(json_acl,
 	    "path",
-	    json_string(path)); 
+	    json_string(path));
 	if (error) {
 		json_decref(json_acl);
 		warnx("failed to add path to JSON output");
@@ -106,7 +106,7 @@ nfs4_print_acl_json(char *path, int flags)
 	acl_text = json_dumps(json_acl, 0);
 	if (acl_text == NULL) {
 		json_decref(json_acl);
-		warnx("Failed to convert ACL to JSON text");	
+		warnx("Failed to convert ACL to JSON text");
 		return (error);
 	}
 
