@@ -39,6 +39,7 @@ include $(TOPDIR)/include/builddefs
 LTLIBRARY = libnfs4acl.la
 LTLIBS = -lattr
 LTLIBS += -lbsd
+LTLIBS += -ljansson
 LTDEPENDENCIES = $(TOPDIR)/include/nfs4.h
 
 # 3 2 1  ->  .so.2.1.2
@@ -99,11 +100,13 @@ LIBACL_NFS4_CFILES = \
 	nfs4_new_acl.c \
 	nfs4_new_ace.c \
 	nfs4_print_acl.c \
+	nfs4_print_acl_json.c \
 	nfs4_remove_file_aces.c \
 	nfs4_remove_string_aces.c \
 	nfs4_set_acl.c \
 	nfs41acl_xdr.c \
 	nfs4_ace_to_text_bsd.c \
+	nfs4_ace_to_json.c \
 	nfs4_ace_from_text_bsd.c \
 	nfs4_aclflag_text.c \
 	acl_nfs4_support_bsd.c \

@@ -231,6 +231,8 @@ extern struct nfs4_ace *	nfs4_get_ace_at(struct nfs4_acl *, unsigned int index);
 
 
 /** Display Functions **/
+extern int			nfs4_print_acl_json(char *path, int flags);
+extern void			nfs4_print_acl_json(FILE *fp, struct nfs4_acl *acl);
 extern void			nfs4_print_acl(FILE *fp, struct nfs4_acl *acl);
 extern int			nfs4_print_ace(FILE *fp, struct nfs4_ace *ace, u32 isdir);
 extern int			nfs4_print_ace_verbose(struct nfs4_ace * ace, u32 isdir);
@@ -254,5 +256,8 @@ int	_nfs4_format_flags(char *str, size_t size, uint var, int verbose);
 int	_nfs4_format_access_mask(char *str, size_t size, uint var, int verbose);
 int	_nfs4_parse_flags(const char *str, uint *var);
 int	_nfs4_parse_access_mask(const char *str, uint *var);
+
+/** JSON **/
+json_t	_nfs4_acl_to_json(struct nfs4_acl *aclp, int flags);
 
 #endif
