@@ -30,53 +30,8 @@
 #include <ctype.h>
 #include <assert.h>
 #include <jansson.h>
+#include "nfs4_json.h"
 #include "libacl_nfs4.h"
-
-#ifndef ARRAY_SIZE
-#define	ARRAY_SIZE(x)	(sizeof (x) / sizeof (x[0]))
-#endif
-
-static const struct {
-	nfs4_acl_flag_t flag;
-	char *name;
-} flags2txt[] = {
-	{ NFS4_ACE_FILE_INHERIT_ACE, "FILE_INHERIT"},
-	{ NFS4_ACE_DIRECTORY_INHERIT_ACE, "DIRECTORY_INHERIT"},
-	{ NFS4_ACE_INHERIT_ONLY_ACE, "INHERIT_ONLY"},
-	{ NFS4_ACE_NO_PROPAGATE_INHERIT_ACE, "NO_PROPAGATE_INHERIT"},
-	{ NFS4_ACE_SUCCESSFUL_ACCESS_ACE_FLAG, "SUCCESSFULL_ACCESS"},
-	{ NFS4_ACE_FAILED_ACCESS_ACE_FLAG, "FAILED_ACCESS"},
-	{ NFS4_ACE_INHERITED_ACE, "INHERITED"},
-};
-
-static const struct {
-	nfs4_acl_perm_t perm;
-	char *name;
-} perms2txt[] = {
-	{ NFS4_ACE_READ_DATA, "READ_DATA"},
-	{ NFS4_ACE_WRITE_DATA, "WRITE_DATA"},
-	{ NFS4_ACE_EXECUTE, "EXECUTE"},
-	{ NFS4_ACE_APPEND_DATA, "APPEND_DATA"},
-	{ NFS4_ACE_DELETE_CHILD, "DELETE_CHILD"},
-	{ NFS4_ACE_DELETE, "DELETE"},
-	{ NFS4_ACE_READ_ATTRIBUTES, "READ_ATTRIBUTES"},
-	{ NFS4_ACE_WRITE_ATTRIBUTES, "WRITE_ATTRIBUTES"},
-	{ NFS4_ACE_READ_NAMED_ATTRS, "READ_NAMED_ATTRS"},
-	{ NFS4_ACE_WRITE_NAMED_ATTRS, "WRITE_NAMED_ATTRS"},
-	{ NFS4_ACE_READ_ACL, "READ_ACL"},
-	{ NFS4_ACE_WRITE_ACL, "WRITE_ACL"},
-	{ NFS4_ACE_WRITE_OWNER, "WRITE_OWNER"},
-	{ NFS4_ACE_SYNCHRONIZE, "SYNCHRONIZE"},
-};
-
-static const struct {
-	nfs4_acl_aclflags_t flag;
-	char *name;
-} aclflags2txt[] = {
-	{ ACL_AUTO_INHERIT, "AUTOINHERIT"},
-	{ ACL_PROTECTED, "PROTECTED"},
-	{ ACL_DEFAULTED, "DEFAULTED"},
-};
 
 static int
 who_to_json(json_t *_parent, struct nfs4_ace *entry, bool numeric)

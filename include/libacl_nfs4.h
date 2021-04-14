@@ -258,6 +258,8 @@ int	_nfs4_parse_flags(const char *str, uint *var);
 int	_nfs4_parse_access_mask(const char *str, uint *var);
 
 /** JSON **/
-json_t*	_nfs4_acl_to_json(struct nfs4_acl *aclp, int flags);
+json_t*				_nfs4_acl_to_json(struct nfs4_acl *aclp, int flags);
+int				set_acl_path_json(const char *path, const char *json_text);
+struct nfs4_acl*		get_acl_json(const char *json_text, bool is_dir);
 
 #endif

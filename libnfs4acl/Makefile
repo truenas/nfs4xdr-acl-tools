@@ -109,6 +109,7 @@ LIBACL_NFS4_CFILES = \
 	nfs4_ace_to_json.c \
 	nfs4_ace_from_text_bsd.c \
 	nfs4_aclflag_text.c \
+	nfs4_json_to_acl.c \
 	acl_nfs4_support_bsd.c \
 	strtoul_reals.c
 
