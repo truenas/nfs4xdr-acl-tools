@@ -123,7 +123,7 @@ json_ace_get_type(json_t *_jsace, int idx, nfs4_acl_type_t *_typep, json_t *_ver
 			err(EX_OSERR, "asprintf() failed");
 		}
 
-		error = asprintf(&err_field, "dacl.%d.type", idx);
+		error = asprintf(&err_field, "acl.%d.type", idx);
 		if (error == -1) {
 			err(EX_OSERR, "asprintf() failed");
 		}
@@ -150,7 +150,7 @@ json_ace_get_type(json_t *_jsace, int idx, nfs4_acl_type_t *_typep, json_t *_ver
 			err(EX_OSERR, "asprintf() failed");
 		}
 
-		error = asprintf(&err_field, "dacl.%d.type", idx);
+		error = asprintf(&err_field, "acl.%d.type", idx);
 		if (error == -1) {
 			err(EX_OSERR, "asprintf() failed");
 		}
@@ -188,7 +188,7 @@ json_ace_get_perm(json_t *_jsace, int idx, nfs4_acl_perm_t *_perms, json_t *_ver
 			err(EX_OSERR, "asprintf() failed");
 		}
 
-		error = asprintf(&err_field, "dacl.%d.perms", idx);
+		error = asprintf(&err_field, "acl.%d.perms", idx);
 		if (error == -1) {
 			err(EX_OSERR, "asprintf() failed");
 		}
@@ -215,7 +215,7 @@ json_ace_get_perm(json_t *_jsace, int idx, nfs4_acl_perm_t *_perms, json_t *_ver
 				err(EX_OSERR, "asprintf() failed");
 			}
 
-			error = asprintf(&err_field, "dacl.%d.perms", idx);
+			error = asprintf(&err_field, "acl.%d.perms", idx);
 			if (error == -1) {
 				err(EX_OSERR, "asprintf() failed");
 			}
@@ -250,7 +250,7 @@ json_ace_get_perm(json_t *_jsace, int idx, nfs4_acl_perm_t *_perms, json_t *_ver
 				return (error);
 			}
 
-			error = asprintf(&err_field, "dacl.%d.perms", idx);
+			error = asprintf(&err_field, "acl.%d.perms", idx);
 			if (error == -1) {
 				return (error);
 			}
@@ -285,7 +285,7 @@ json_ace_get_perm(json_t *_jsace, int idx, nfs4_acl_perm_t *_perms, json_t *_ver
 				err(EX_OSERR, "asprintf() failed");
 			}
 
-			error = asprintf(&err_field, "dacl.%d.perms", idx);
+			error = asprintf(&err_field, "acl.%d.perms", idx);
 			if (error == -1) {
 				err(EX_OSERR, "asprintf() failed");
 			}
@@ -311,7 +311,7 @@ json_ace_get_perm(json_t *_jsace, int idx, nfs4_acl_perm_t *_perms, json_t *_ver
 				err(EX_OSERR, "asprintf() failed");
 			}
 
-			error = asprintf(&err_field, "dacl.%d.perms", idx);
+			error = asprintf(&err_field, "acl.%d.perms", idx);
 			if (error == -1) {
 				err(EX_OSERR, "asprintf() failed");
 			}
@@ -352,7 +352,7 @@ json_ace_get_flag(json_t *_jsace, int idx, nfs4_acl_flag_t *_flags, json_t *_ver
 			err(EX_OSERR, "asprintf() failed");
 		}
 
-		error = asprintf(&err_field, "dacl.%d.flags", idx);
+		error = asprintf(&err_field, "acl.%d.flags", idx);
 		if (error == -1) {
 			err(EX_OSERR, "asprintf() failed");
 		}
@@ -378,7 +378,7 @@ json_ace_get_flag(json_t *_jsace, int idx, nfs4_acl_flag_t *_flags, json_t *_ver
 				err(EX_OSERR, "asprintf() failed");
 			}
 
-			error = asprintf(&err_field, "dacl.%d.flags", idx);
+			error = asprintf(&err_field, "acl.%d.flags", idx);
 			if (error == -1) {
 				err(EX_OSERR, "asprintf() failed");
 			}
@@ -403,7 +403,7 @@ json_ace_get_flag(json_t *_jsace, int idx, nfs4_acl_flag_t *_flags, json_t *_ver
 			if (error == -1) {
 				err(EX_OSERR, "asprintf() failed");
 			}
-			error = asprintf(&err_field, "dacl.%d.flags", idx);
+			error = asprintf(&err_field, "acl.%d.flags", idx);
 			if (error == -1) {
 				err(EX_OSERR, "asprintf() failed");
 			}
@@ -438,7 +438,7 @@ json_ace_get_flag(json_t *_jsace, int idx, nfs4_acl_flag_t *_flags, json_t *_ver
 				err(EX_OSERR, "asprintf() failed");
 			}
 
-			error = asprintf(&err_field, "dacl.%d.flags", idx);
+			error = asprintf(&err_field, "acl.%d.flags", idx);
 			if (error == -1) {
 				err(EX_OSERR, "asprintf() failed");
 			}
@@ -463,7 +463,7 @@ json_ace_get_flag(json_t *_jsace, int idx, nfs4_acl_flag_t *_flags, json_t *_ver
 				err(EX_OSERR, "asprintf() failed");
 			}
 
-			error = asprintf(&err_field, "dacl.%d.flags", idx);
+			error = asprintf(&err_field, "acl.%d.flags", idx);
 			if (error == -1) {
 				err(EX_OSERR, "asprintf() failed");
 			}
@@ -506,7 +506,7 @@ json_ace_get_who(json_t *_jsace, int idx, struct nfs4_ace *entry, json_t *_verro
 			err(EX_OSERR, "asprintf() failed");
 		}
 
-		error = asprintf(&err_field, "dacl.%d.tag", idx);
+		error = asprintf(&err_field, "acl.%d.tag", idx);
 		if (error == -1) {
 			err(EX_OSERR, "asprintf() failed");
 		}
@@ -560,7 +560,7 @@ json_ace_get_who(json_t *_jsace, int idx, struct nfs4_ace *entry, json_t *_verro
 			err(EX_OSERR, "asprintf() failed");
 		}
 
-		error = asprintf(&err_field, "dacl.%d.tag", idx);
+		error = asprintf(&err_field, "acl.%d.tag", idx);
 		if (error == -1) {
 			err(EX_OSERR, "asprintf() failed");
 		}
@@ -583,7 +583,7 @@ json_ace_get_who(json_t *_jsace, int idx, struct nfs4_ace *entry, json_t *_verro
 			err(EX_OSERR, "asprintf() failed");
 		}
 
-		error = asprintf(&err_field, "dacl.%d.id", idx);
+		error = asprintf(&err_field, "acl.%d.id", idx);
 		if (error == -1) {
 			err(EX_OSERR, "asprintf() failed");
 		}
@@ -607,7 +607,7 @@ json_ace_get_who(json_t *_jsace, int idx, struct nfs4_ace *entry, json_t *_verro
 			err(EX_OSERR, "asprintf() failed");
 		}
 
-		error = asprintf(&err_field, "dacl.%d.who", idx);
+		error = asprintf(&err_field, "acl.%d.who", idx);
 		if (error == -1) {
 			err(EX_OSERR, "asprintf() failed");
 		}
@@ -628,7 +628,7 @@ json_ace_get_who(json_t *_jsace, int idx, struct nfs4_ace *entry, json_t *_verro
 		err(EX_OSERR, "asprintf() failed");
 	}
 
-	error = asprintf(&err_field, "dacl.%d.id", idx);
+	error = asprintf(&err_field, "acl.%d.id", idx);
 	if (error == -1) {
 		err(EX_OSERR, "asprintf() failed");
 	}
@@ -667,7 +667,7 @@ get_aclflags_from_json(json_t *_jsacl, nfs4_acl_aclflags_t *_aclflags, json_t *_
 			err(EX_OSERR, "asprintf() failed");
 		}
 
-		error = asprintf(&err_field, "dacl.nfs41_flags");
+		error = asprintf(&err_field, "acl.nfs41_flags");
 		if (error == -1) {
 			err(EX_OSERR, "asprintf() failed");
 		}
@@ -695,7 +695,7 @@ get_aclflags_from_json(json_t *_jsacl, nfs4_acl_aclflags_t *_aclflags, json_t *_
 				err(EX_OSERR, "asprintf() failed");
 			}
 
-			error = asprintf(&err_field, "dacl.nfs41_flags");
+			error = asprintf(&err_field, "acl.nfs41_flags");
 			if (error == -1) {
 				err(EX_OSERR, "asprintf() failed");
 			}
@@ -721,7 +721,7 @@ get_aclflags_from_json(json_t *_jsacl, nfs4_acl_aclflags_t *_aclflags, json_t *_
 				err(EX_OSERR, "asprintf() failed");
 			}
 
-			error = asprintf(&err_field, "dacl.nfs41_flags");
+			error = asprintf(&err_field, "acl.nfs41_flags");
 			if (error == -1) {
 				err(EX_OSERR, "asprintf() failed");
 			}
@@ -809,9 +809,9 @@ struct nfs4_acl
 		err(EX_OSERR, "Failed to generate JSON array for verrors");
 	}
 
-	js_aces = json_object_get(json_acl, "dacl");
+	js_aces = json_object_get(json_acl, "acl");
 	if (!json_is_array(js_aces)) {
-		warnx("{\"dacl\": \"ACES array not found\"}");
+		warnx("{\"acl\": \"ACES array not found\"}");
 		return (NULL);
 	}
 

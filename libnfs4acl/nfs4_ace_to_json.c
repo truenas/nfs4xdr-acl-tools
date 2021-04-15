@@ -345,7 +345,7 @@ json_t
 		}
 	}
 
-	error = json_object_set_new(jsout, "dacl", dacl);
+	error = json_object_set_new(jsout, "acl", dacl);
 
 	error  = aclflags_to_json(jsout, aclp->aclflags4);
 	if (error) {
