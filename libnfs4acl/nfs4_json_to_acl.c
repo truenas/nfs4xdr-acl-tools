@@ -208,6 +208,7 @@ json_ace_get_perm(json_t *_jsace, int idx, nfs4_acl_perm_t *_perms, json_t *_ver
 	 */
 	basic = json_object_get(jspermset, "BASIC");
 	if (basic != NULL) {
+		bool found_basic = false;
 		const char *basic_str = NULL;
 		if (!json_is_string(basic)) {
 			error = asprintf(&err_str, "BASIC ACE permset is not a string.");
@@ -228,23 +229,14 @@ json_ace_get_perm(json_t *_jsace, int idx, nfs4_acl_perm_t *_perms, json_t *_ver
 			return (-EINVAL);
 		}
 		basic_str = json_string_value(basic);
-		if (strcmp(basic_str, "FULL_CONTROL") == 0) {
-			permset = NFS4_ACE_FULL_SET;
+		for (i = 0; i < ARRAY_SIZE(basicperms2txt); i++) {
+			if (strcmp(basic_str, basicperms2txt[i].name) == 0) {
+				found_basic = true;
+				permset = basicperms2txt[i].perm;
+				break;
+			}
 		}
-		else if (strcmp(basic_str, "MODIFY") == 0) {
-			permset = NFS4_ACE_MODIFY_SET;
-		}
-		else if (strcmp(basic_str, "READ") == 0) {
-			permset = (NFS4_ACE_READ_SET |
-				   NFS4_ACE_EXECUTE);
-		}
-		else if (strcmp(basic_str, "TRAVERSE") == 0) {
-			permset = (NFS4_ACE_EXECUTE |
-				   NFS4_ACE_READ_ATTRIBUTES |
-				   NFS4_ACE_READ_NAMED_ATTRS |
-				   NFS4_ACE_READ_ACL);
-		}
-		else {
+		if (!found_basic) {
 			error = asprintf(&err_str, "Invalid BASIC ACE type: %s", basic_str);
 			if (error == -1) {
 				return (error);
@@ -371,6 +363,7 @@ json_ace_get_flag(json_t *_jsace, int idx, nfs4_acl_flag_t *_flags, json_t *_ver
 	 */
 	basic = json_object_get(jsflagset, "BASIC");
 	if (basic != NULL) {
+		bool found_basic = false;
 		const char *basic_str = NULL;
 		if (!json_is_string(basic)) {
 			error = asprintf(&err_str, "BASIC ACE flagset is not a string.");
@@ -390,14 +383,14 @@ json_ace_get_flag(json_t *_jsace, int idx, nfs4_acl_flag_t *_flags, json_t *_ver
 			return (-EINVAL);
 		}
 		basic_str = json_string_value(basic);
-		if (strcmp(basic_str, "INHERIT") == 0) {
-			flagset = (NFS4_ACE_DIRECTORY_INHERIT_ACE |
-				   NFS4_ACE_FILE_INHERIT_ACE);
+		for (i = 0; i < ARRAY_SIZE(basicflags2txt); i++) {
+			if (strcmp(basic_str, basicflags2txt[i].name) == 0) {
+				found_basic = true;
+				flagset = basicflags2txt[i].flag;
+				break;
+			}
 		}
-		else if (strcmp(basic_str, "NOINHERIT") == 0) {
-			flagset = 0;
-		}
-		else {
+		if (!found_basic) {
 			error = asprintf(&err_str, "Invalid BASIC ACE flag type: %s",
 					 basic_str);
 			if (error == -1) {
@@ -795,7 +788,7 @@ struct nfs4_acl
 {
 	struct nfs4_acl *out = NULL;
 	struct nfs4_ace *ace = NULL;
-	json_t *js_aces = NULL, *verrors = NULL, *js_aclflags = NULL;
+	json_t *js_aces = NULL, *verrors = NULL;
 	size_t nsaces;
 	int i, error;
 

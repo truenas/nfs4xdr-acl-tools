@@ -30,12 +30,22 @@
 #include "libacl_nfs4.h"
 
 #ifndef ARRAY_SIZE
-#define	ARRAY_SIZE(x)	(sizeof (x) / sizeof (x[0]))
+#define	ARRAY_SIZE(x)		(sizeof (x) / sizeof (x[0]))
 #endif
+
+#define	BASIC_FULL_CONTROL	(NFS4_ACE_FULL_SET)
+#define	BASIC_MODIFY		(NFS4_ACE_MODIFY_SET)
+#define	BASIC_READ		(NFS4_ACE_READ_SET | NFS4_ACE_EXECUTE)
+#define	BASIC_TRAVERSE		(NFS4_ACE_EXECUTE | NFS4_ACE_READ_ATTRIBUTES | \
+					 NFS4_ACE_READ_NAMED_ATTRS | NFS4_ACE_READ_ACL)
+
+#define	BASIC_INHERIT		(NFS4_ACE_FILE_INHERIT_ACE | \
+					 NFS4_ACE_DIRECTORY_INHERIT_ACE)
+#define	BASIC_NOINHERIT		(0)
 
 const struct {
 	nfs4_acl_flag_t flag;
-	char *name;
+	const char *name;
 } flags2txt[] = {
 	{ NFS4_ACE_FILE_INHERIT_ACE, "FILE_INHERIT"},
 	{ NFS4_ACE_DIRECTORY_INHERIT_ACE, "DIRECTORY_INHERIT"},
@@ -48,7 +58,7 @@ const struct {
 
 const struct {
 	nfs4_acl_perm_t perm;
-	char *name;
+	const char *name;
 } perms2txt[] = {
 	{ NFS4_ACE_READ_DATA, "READ_DATA"},
 	{ NFS4_ACE_WRITE_DATA, "WRITE_DATA"},
@@ -68,7 +78,7 @@ const struct {
 
 const struct {
 	nfs4_acl_type_t type;
-	char *name;
+	const char *name;
 } type2txt[] = {
 	{ NFS4_ACE_READ_DATA, "READ_DATA"},
 	{ NFS4_ACE_ACCESS_ALLOWED_ACE_TYPE, "ALLOW"},
@@ -79,9 +89,27 @@ const struct {
 
 const struct {
 	nfs4_acl_aclflags_t flag;
-	char *name;
+	const char *name;
 } aclflags2txt[] = {
 	{ ACL_AUTO_INHERIT, "AUTOINHERIT"},
 	{ ACL_PROTECTED, "PROTECTED"},
 	{ ACL_DEFAULTED, "DEFAULTED"},
+};
+
+const struct {
+	nfs4_acl_perm_t perm;
+	const char *name;
+} basicperms2txt[] = {
+	{ BASIC_FULL_CONTROL, "FULL_CONTROL"},
+	{ BASIC_MODIFY, "MODIFY"},
+	{ BASIC_READ, "READ"},
+	{ BASIC_TRAVERSE, "TRAVERSE"},
+};
+
+const struct {
+	nfs4_acl_flag_t flag;
+	const char *name;
+} basicflags2txt[] = {
+	{ BASIC_INHERIT, "INHERIT"},
+	{ BASIC_NOINHERIT, "NOINHERIT"},
 };

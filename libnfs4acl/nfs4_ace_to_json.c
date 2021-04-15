@@ -30,6 +30,8 @@
 #include <ctype.h>
 #include <assert.h>
 #include <jansson.h>
+#include <sysexits.h>
+#include <err.h>
 #include "nfs4_json.h"
 #include "libacl_nfs4.h"
 
@@ -99,32 +101,14 @@ perms_to_json(json_t *_parent, nfs4_acl_perm_t access_mask, bool verbose)
 		return (-1);
 	}
 	if (!verbose) {
-		if (access_mask == (NFS4_ACE_FULL_SET)) {
-			basic = json_string("FULL_CONTROL");
-			if (basic == NULL) {
-				return (-1);
-			}
-		}
-		else if (access_mask == (NFS4_ACE_MODIFY_SET)) {
-			basic = json_string("MODIFY");
-			if (basic == NULL) {
-				return (-1);
-			}
-		}
-		else if (access_mask == (NFS4_ACE_READ_SET |
-					 NFS4_ACE_EXECUTE)) {
-			basic = json_string("READ");
-			if (basic == NULL) {
-				return (-1);
-			}
-		}
-		else if (access_mask == (NFS4_ACE_EXECUTE |
-					 NFS4_ACE_READ_ATTRIBUTES |
-					 NFS4_ACE_READ_NAMED_ATTRS |
-					 NFS4_ACE_READ_ACL)) {
-			basic = json_string("TRAVERSE");
-			if (basic == NULL) {
-				return (-1);
+		for (i = 0; i < ARRAY_SIZE(basicperms2txt); i++) {
+			if (basicperms2txt[i].perm == access_mask) {
+				basic = json_string(basicperms2txt[i].name);
+				if (basic == NULL) {
+					errx(EX_OSERR, "json_string() failed for %s",
+					    basicperms2txt[i].name);
+				}
+				break;
 			}
 		}
 		if (basic) {
@@ -162,17 +146,14 @@ flags_to_json(json_t *_parent, nfs4_acl_flag_t flagset, bool verbose)
 		return (-1);
 	}
 	if (!verbose) {
-		if (flagset == (NFS4_ACE_DIRECTORY_INHERIT_ACE |
-				NFS4_ACE_FILE_INHERIT_ACE)) {
-			basic = json_string("INHERIT");
-			if (basic == NULL) {
-				return (-1);
-			}
-		}
-		else if (flagset == 0) {
-			basic = json_string("NOINHERIT");
-			if (basic == NULL) {
-				return (-1);
+		for (i = 0; i < ARRAY_SIZE(basicflags2txt); i++) {
+			if (basicflags2txt[i].flag == flagset) {
+				basic = json_string(basicflags2txt[i].name);
+				if (basic == NULL) {
+					errx(EX_OSERR, "json_string() failed for %s",
+					    basicflags2txt[i].name);
+				}
+				break;
 			}
 		}
 		if (basic) {
