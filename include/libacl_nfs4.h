@@ -142,6 +142,17 @@
  */
 #define NFS4_MAX_ACLSIZE	(65536)
 
+#define NFS41ACLMAXACES		(128)
+#define	ACES_2_XDRSIZE(naces) 	((sizeof(u_int) * 2) + (naces * sizeof(nfsace4i)))
+#define XDRSIZE_2_ACES(sz)	((sz - (sizeof(u_int) * 2)) / sizeof(nfsace4i))
+#define XDRSIZE_IS_VALID(sz)	((sz > ((sizeof(u_int) * 2) + sizeof(nfsace4i))) && \
+				(((sz - (sizeof(u_int) * 2)) % sizeof(nfsace4i)) == 0))
+
+#define ACES_2_ACLSIZE(naces)	(sizeof(nfsacl41i) + (naces * sizeof(nfsace4i)))
+#define ACLSIZE_2_ACES(sz)	((sz - (sizeof(nfsacl41i))) / sizeof(nfsace4i))
+#define ACLSIZE_IS_VALID(sz)	((sz > (sizeof(nfsacl41i) + sizeof(nfsace4i))) && \
+				(((sz - sizeof(nfsacl41i)) % sizeof(nfsace4i) == 0)))
+
 /* NFS4 acl xattr name */
 #define SYSTEM_XATTR "system.nfs4_acl_xdr"
 #define SECURITY_XATTR "security.nfs4acl_xdr"

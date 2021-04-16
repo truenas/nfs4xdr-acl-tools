@@ -39,23 +39,25 @@
 #include "nfs41acl.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include <assert.h>
 
 
 size_t acl_nfs4_xattr_pack(struct nfs4_acl * acl, char** bufp)
 {
 	struct nfs4_ace *ace = NULL;
 	nfsacl41i *nacl = NULL;
-	int ace_num;
-	int result;
+	int i, result;
 	XDR xdr = {0};
 	bool ok;
-	size_t acl_size = sizeof(nfsacl41i) + (acl->naces * sizeof(nfsace4i));
+	size_t acl_size = 0, xdr_size = 0;
 	
 	if (acl == NULL || bufp == NULL) {
 		errno = EINVAL;
 		goto failed;
 	}
 
+	acl_size = ACES_2_ACLSIZE(acl->naces);
+	xdr_size = ACES_2_XDRSIZE(acl->naces);
 	nacl = calloc(1, acl_size);
 	*bufp = (char*) calloc(1, acl_size);
 	if (*bufp == NULL) {
@@ -65,19 +67,11 @@ size_t acl_nfs4_xattr_pack(struct nfs4_acl * acl, char** bufp)
 	nacl->na41_aces.na41_aces_len = acl->naces;
 	nacl->na41_flag = acl->aclflags4;
 	nacl->na41_aces.na41_aces_val = (nfsace4i *)((char *)nacl + sizeof(nfsacl41i));	
-	ace = nfs4_get_first_ace(acl);
-	ace_num = 1;
-	while (1) {
-		if (ace == NULL) {
-			if (ace_num > acl->naces) {
-				break;
-			} else {
-				errno = ENODATA;
-				goto failed;
-			}
-		}
+	for (ace = nfs4_get_first_ace(acl), i = 0; ace != NULL;
+	     ace = nfs4_get_next_ace(&ace), i++) {
+		assert(i < acl->naces);
 
-		nfsace4i *nacep = &nacl->na41_aces.na41_aces_val[ace_num -1];
+		nfsace4i *nacep = &nacl->na41_aces.na41_aces_val[i];
 		nacep->type = ace->type;
 		nacep->flag = ace->flag;
 		nacep->access_mask = ace->access_mask;
@@ -108,17 +102,15 @@ size_t acl_nfs4_xattr_pack(struct nfs4_acl * acl, char** bufp)
 			nacep->who, nacep->iflag, nacep->type,
 			nacep->access_mask, nacep->flag);
 #endif
-		nfs4_get_next_ace(&ace);
-		ace_num++;
 	}
-        xdrmem_create(&xdr, *bufp, acl_size, XDR_ENCODE);
+        xdrmem_create(&xdr, *bufp, xdr_size, XDR_ENCODE);
 	ok = xdr_nfsacl41i(&xdr, nacl);
 	if (!ok) {
 		free(nacl);
 		goto free_failed;
 	}
 	free(nacl);
-	return acl_size;
+	return xdr_size;
 
 free_failed:
 	free(*bufp);
@@ -127,6 +119,3 @@ free_failed:
 failed:
 	return -1;
 }
-
-
-

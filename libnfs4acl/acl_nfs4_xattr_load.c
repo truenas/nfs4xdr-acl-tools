@@ -52,11 +52,11 @@ struct nfs4_acl * acl_nfs4_xattr_load(char *xattr_v, int xattr_size, u32 is_dir)
 	nfs4_acl_type_t type;
 	nfs4_acl_flag_t flag;
 	nfs4_acl_perm_t access_mask;
-	size_t acl_size;
 	XDR xdr = {0};
+	size_t acl_size = 0, xdr_size = 0;
 	bool ok;
 
-	if (xattr_size < sizeof(u32)) {
+	if (!XDRSIZE_IS_VALID(xattr_size)) {
 		errno = EINVAL;
 		return NULL;
 	}
@@ -66,15 +66,16 @@ struct nfs4_acl * acl_nfs4_xattr_load(char *xattr_v, int xattr_size, u32 is_dir)
 		return NULL;
 	}
 
-	num_aces = ((xattr_size - sizeof(aclflag4) - sizeof(unsigned)) / sizeof(struct nfsace4i));
-	acl_size = sizeof(nfsacl41i) + (num_aces * sizeof(struct nfsace4i));
+	num_aces = XDRSIZE_2_ACES(xattr_size);
+	acl_size = ACES_2_ACLSIZE(num_aces);
 
-	nacl = (nfsacl41i *)calloc(num_aces, acl_size);
+	nacl = (nfsacl41i *)calloc(1, acl_size);
 	if (nacl == NULL) {
 		errno = ENOMEM;
 		goto err1;
 	}
-	xdrmem_create(&xdr, bufp, acl_size, XDR_DECODE);
+
+	xdrmem_create(&xdr, bufp, xattr_size, XDR_DECODE);
 	ok = xdr_nfsacl41i(&xdr, nacl);
 	if (!ok) {
 		errno = ENOMEM;
