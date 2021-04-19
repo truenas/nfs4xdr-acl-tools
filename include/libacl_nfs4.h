@@ -145,12 +145,12 @@
 #define NFS41ACLMAXACES		(128)
 #define	ACES_2_XDRSIZE(naces) 	((sizeof(u_int) * 2) + (naces * sizeof(nfsace4i)))
 #define XDRSIZE_2_ACES(sz)	((sz - (sizeof(u_int) * 2)) / sizeof(nfsace4i))
-#define XDRSIZE_IS_VALID(sz)	((sz > ((sizeof(u_int) * 2) + sizeof(nfsace4i))) && \
+#define XDRSIZE_IS_VALID(sz)	((sz >= ((sizeof(u_int) * 2) + sizeof(nfsace4i))) && \
 				(((sz - (sizeof(u_int) * 2)) % sizeof(nfsace4i)) == 0))
 
 #define ACES_2_ACLSIZE(naces)	(sizeof(nfsacl41i) + (naces * sizeof(nfsace4i)))
 #define ACLSIZE_2_ACES(sz)	((sz - (sizeof(nfsacl41i))) / sizeof(nfsace4i))
-#define ACLSIZE_IS_VALID(sz)	((sz > (sizeof(nfsacl41i) + sizeof(nfsace4i))) && \
+#define ACLSIZE_IS_VALID(sz)	((sz >= (sizeof(nfsacl41i) + sizeof(nfsace4i))) && \
 				(((sz - sizeof(nfsacl41i)) % sizeof(nfsace4i) == 0)))
 
 /* NFS4 acl xattr name */
@@ -175,6 +175,10 @@
 #define NFS4_ACL_RAW				0x01
 
 #define NFS4_XDR_MOD				4
+
+#ifndef ARRAY_SIZE
+#define	ARRAY_SIZE(x)		(sizeof (x) / sizeof (x[0]))
+#endif
 
 typedef u_int32_t u32;
 
@@ -269,6 +273,7 @@ int	_nfs4_parse_flags(const char *str, uint *var);
 int	_nfs4_parse_access_mask(const char *str, uint *var);
 
 /** JSON **/
+json_t*				_nfs4_ace_to_json(struct nfs4_ace *entry, int flags);
 json_t*				_nfs4_acl_to_json(struct nfs4_acl *aclp, int flags);
 int				set_acl_path_json(const char *path, const char *json_text);
 struct nfs4_acl*		get_acl_json(const char *json_text, bool is_dir);

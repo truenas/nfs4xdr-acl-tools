@@ -56,7 +56,14 @@ struct nfs4_acl * acl_nfs4_xattr_load(char *xattr_v, int xattr_size, u32 is_dir)
 	size_t acl_size = 0, xdr_size = 0;
 	bool ok;
 
+
+	if (xattr_size > ACES_2_XDRSIZE(NFS41ACLMAXACES)) {
+		errno = E2BIG;
+		return NULL;
+	}
+
 	if (!XDRSIZE_IS_VALID(xattr_size)) {
+		fprintf(stderr, "xattr size: %d is invalid\n", xattr_size);
 		errno = EINVAL;
 		return NULL;
 	}

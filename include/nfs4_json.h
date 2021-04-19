@@ -26,8 +26,13 @@
  * SUCH DAMAGE.
  */
 
+#ifndef	NFS4_JSON_H
+#define	NFS4_JSON_H 1
+
 #include <jansson.h>
+#ifndef LIBACL_NFS4_H
 #include "libacl_nfs4.h"
+#endif
 
 #ifndef ARRAY_SIZE
 #define	ARRAY_SIZE(x)		(sizeof (x) / sizeof (x[0]))
@@ -113,3 +118,4 @@ const struct {
 	{ BASIC_INHERIT, "INHERIT"},
 	{ BASIC_NOINHERIT, "NOINHERIT"},
 };
+#endif /* NFS4_JSON_H */
