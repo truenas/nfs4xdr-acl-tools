@@ -10,6 +10,7 @@
 
 #include<sys/types.h>
 #include<sys/queue.h>
+#define NFS4_DEBUG 1
 
 #define NFS4_ACE_ACCESS_ALLOWED_ACE_TYPE 0
 #define NFS4_ACE_ACCESS_DENIED_ACE_TYPE  1
@@ -102,13 +103,14 @@ typedef u_int32_t nfs4_acl_flag_t;
 typedef u_int32_t nfs4_acl_perm_t;
 typedef u_int32_t nfs4_acl_aclflags_t;
 typedef u_int32_t nfs4_acl_who_t;
+typedef uid_t     nfs4_acl_id_t;
 
 struct nfs4_ace {
 	nfs4_acl_type_t		type;
 	nfs4_acl_who_t		whotype;
+	nfs4_acl_id_t		who_id;	
 	nfs4_acl_flag_t		flag;
 	nfs4_acl_perm_t		access_mask;
-	char			who[NFS4_MAX_PRINCIPALSIZE];
 	TAILQ_ENTRY(nfs4_ace)	l_ace;
 };
 

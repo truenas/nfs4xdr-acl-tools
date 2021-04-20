@@ -477,14 +477,14 @@ static int
 json_ace_get_who(json_t *_jsace, int idx, struct nfs4_ace *entry, json_t *_verrors)
 {
 	nfs4_acl_who_t whotype = 0;
-	char who_str[NFS4_MAX_PRINCIPALSIZE] = {0};
+	nfs4_acl_id_t id = -1;
 	json_t *jstag = NULL;
 	json_t *jsid = NULL;
 	json_t *jswho = NULL;
 	char *err_str = NULL;
 	char *err_field = NULL;
 	const char *tag = NULL, *who = NULL;
-	int who_id, error;
+	int error;
 
 
 	jstag = json_object_get(_jsace, "tag");
@@ -512,27 +512,21 @@ json_ace_get_who(json_t *_jsace, int idx, struct nfs4_ace *entry, json_t *_verro
 	}
 	tag = json_string_value(jstag);
 	if (strcmp(tag, "owner@") == 0) {
-		snprintf(who_str, NFS4_MAX_PRINCIPALSIZE,
-			 NFS4_ACL_WHO_OWNER_STRING);
 		whotype = NFS4_ACL_WHO_OWNER;
 		entry->flag |= NFS4_ACE_OWNER;
-		return acl_nfs4_set_who(entry, whotype, who_str);
+		return acl_nfs4_set_who(entry, whotype, NULL, &id);
 	}
 
 	if (strcmp(tag, "group@") == 0) {
-		snprintf(who_str, NFS4_MAX_PRINCIPALSIZE,
-			 NFS4_ACL_WHO_GROUP_STRING);
 		whotype = NFS4_ACL_WHO_GROUP;
 		entry->flag |= (NFS4_ACE_GROUP | NFS4_ACE_IDENTIFIER_GROUP);
-		return acl_nfs4_set_who(entry, whotype, who_str);
+		return acl_nfs4_set_who(entry, whotype, NULL, &id);
 	}
 
 	if (strcmp(tag, "everyone@") == 0) {
-		snprintf(who_str, NFS4_MAX_PRINCIPALSIZE,
-			 NFS4_ACL_WHO_EVERYONE_STRING);
 		whotype = NFS4_ACL_WHO_EVERYONE;
 		entry->flag |= NFS4_ACE_EVERYONE;
-		return acl_nfs4_set_who(entry, whotype, who_str);
+		return acl_nfs4_set_who(entry, whotype, NULL, &id);
 	}
 
 	/*
@@ -544,7 +538,7 @@ json_ace_get_who(json_t *_jsace, int idx, struct nfs4_ace *entry, json_t *_verro
 		whotype = NFS4_ACL_WHO_NAMED;
 	}
 	else if (strcmp(tag, "GROUP") == 0) {
-		whotype = NFS4_ACL_WHO_EVERYONE;
+		whotype = NFS4_ACL_WHO_NAMED;
 		entry->flag |= NFS4_ACE_IDENTIFIER_GROUP;
 	}
 	else {
@@ -569,6 +563,8 @@ json_ace_get_who(json_t *_jsace, int idx, struct nfs4_ace *entry, json_t *_verro
 	 * Principal can be specified through either numeric ID
 	 * or name.
 	 */
+
+	/* First check for Numeric ID */
 	jsid = json_object_get(_jsace, "id");
 	if (jsid && (!json_is_integer(jsid))) {
 		error = asprintf(&err_str, "ACE id is not an integer.");
@@ -588,13 +584,13 @@ json_ace_get_who(json_t *_jsace, int idx, struct nfs4_ace *entry, json_t *_verro
 		return (-EINVAL);
 	}
 	else if (jsid) {
-		who_id = json_integer_value(jsid);
-		snprintf(who_str, NFS4_MAX_PRINCIPALSIZE, "%d", who_id);
-		return acl_nfs4_set_who(entry, whotype, who_str);
+		id = (nfs4_acl_id_t)json_integer_value(jsid);
+		return acl_nfs4_set_who(entry, whotype, NULL, &id);
 	}
 
+	/* We did not have a numeric ID, now check for name */
 	jswho = json_object_get(_jsace, "who");
-	if (jsid && (!json_is_string(jswho))) {
+	if (jswho && (!json_is_string(jswho))) {
 		error = asprintf(&err_str, "ACE who is not a string.");
 		if (error == -1) {
 			err(EX_OSERR, "asprintf() failed");
@@ -612,10 +608,11 @@ json_ace_get_who(json_t *_jsace, int idx, struct nfs4_ace *entry, json_t *_verro
 		return (-EINVAL);
 	}
 	else if (jswho) {
-		who = json_string_value(jsid);
-		return acl_nfs4_set_who(entry, whotype, who);
+		who = json_string_value(jswho);
+		return acl_nfs4_set_who(entry, whotype, who, NULL);
 	}
 
+	/* Neither a numerical ID nor name was specified. Return failure. */
 	error = asprintf(&err_str, "ACE principal for [%s] is unspecified.", tag);
 	if (error == -1) {
 		err(EX_OSERR, "asprintf() failed");
@@ -743,7 +740,7 @@ struct nfs4_ace
 	    0, /* flag */
 	    0, /* access_mask */
 	    NFS4_ACL_WHO_OWNER,
-	    NFS4_ACL_WHO_OWNER_STRING);
+	    -1);
 
 	assert(out != NULL);
 

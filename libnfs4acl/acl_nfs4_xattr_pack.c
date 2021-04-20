@@ -91,10 +91,7 @@ size_t acl_nfs4_xattr_pack(struct nfs4_acl * acl, char** bufp)
 			break;
 		case NFS4_ACL_WHO_NAMED:
 			nacep->iflag = 0;
-			result = acl_nfs4_get_who(ace, &nacep->who, NULL, 0);
-			if (result != 0) {
-				goto free_failed;
-			}
+			nacep->who = ace->who_id;
 		}
 #ifdef NFS4_DEBUG
 		fprintf(stderr, "who: 0x%08x, iflag: 0x%08x, type: 0x%08x "

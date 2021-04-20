@@ -625,7 +625,7 @@ auto_inherit_acl(FTSENT *entry, struct nfs4_acl *cur_acl, int flags)
 		}
 		new_ace = nfs4_new_ace(is_dir, ace->type, ace->flag,
 				       ace->access_mask, ace->whotype,
-				       ace->who);
+				       ace->who_id);
 		if (new_ace == NULL) {
 			nfs4_free_acl(to_inherit);
 			nfs4_free_acl(new_acl);
@@ -651,7 +651,7 @@ auto_inherit_acl(FTSENT *entry, struct nfs4_acl *cur_acl, int flags)
 	    ace = nfs4_get_next_ace(&ace)) {
 		new_ace = nfs4_new_ace(is_dir, ace->type, ace->flag,
 				       ace->access_mask, ace->whotype,
-				       ace->who);
+				       ace->who_id);
 		if (new_ace == NULL) {
 			nfs4_free_acl(to_inherit);
 			nfs4_free_acl(new_acl);

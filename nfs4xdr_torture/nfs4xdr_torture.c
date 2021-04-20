@@ -51,6 +51,76 @@ static struct option long_options[] = {
 static char *to_run = NULL;
 bool run_all = false;
 
+
+static int set_and_verify_aces(const char *path)
+{
+	int error, i;
+	int carried_error = 0;
+	struct nfs4_acl *old_acl = NULL;
+
+	/*
+	 * Test sets directory-specific flags
+	 */
+	old_acl = nfs4_acl_get_file(path);
+	if (old_acl == NULL) {
+		errx(EX_OSERR, "%s: nfs4_acl_get_file() failed.", path);
+	}
+	for (i = 0; i < ARRAY_SIZE(acetemplates); i++) {
+		printf("Testing [%s]\n", acetemplates[i].name);
+		struct nfs4_acl *new_acl = NULL, *ret_acl = NULL;
+		struct nfs4_ace *new_ace = NULL, *ret_ace = NULL;
+		bool is_equal = false;
+
+		new_ace = nfs4_new_ace(
+		    true,
+		    acetemplates[i].ace.type,
+		    acetemplates[i].ace.flag,
+		    acetemplates[i].ace.access_mask,
+		    acetemplates[i].ace.whotype,
+		    acetemplates[i].ace.who_id);
+		if (new_ace == NULL) {
+			errx(EX_OSERR, "%s: nfs4_new_ace() failed.", path);
+		};
+		printf("NEW ACE: type: %d, flag: 0x%08x, access_maks 0x%08x, whotype: %d\n",
+			new_ace->type, new_ace->flag, new_ace->access_mask, new_ace->whotype);		
+
+		new_acl = nfs4_new_acl(old_acl->is_directory);
+		if (new_acl == NULL) {
+			errx(EX_OSERR, "%s: nfs4_new_acl() failed.", path);
+		}
+
+		error = nfs4_append_ace(new_acl, new_ace);
+		if (error) {
+			errx(EX_OSERR, "%s: nfs4_append_ace() failed", path);
+		}
+
+		error = nfs4_acl_set_file(new_acl, path);
+		if (error) {
+			errx(EX_OSERR, "%s: nfs4_acl_set_file() failed: %s", path, strerror(errno));
+		}
+
+		nfs4_free_acl(new_acl);
+
+		new_acl = nfs4_acl_get_file(path);
+		if (new_acl == NULL) {
+			errx(EX_OSERR, "%s: nfs4_acl_get_file() failed for new ACL.", path);
+		}
+		ret_ace = nfs4_get_first_ace(new_acl);
+		if (ret_ace == NULL) {
+			errx(EX_OSERR, "%s: nfs4_acl_get_first_ace() failed for new ACL.", path);
+		}
+
+		is_equal = ace_is_equal(new_ace, ret_ace);
+		if (!is_equal) {
+			fprintf(stderr, "%s: resulting ACEs differ", path);
+			carried_error = -1;
+		}
+		nfs4_free_acl(new_acl);
+		nfs4_free_acl(ret_acl);
+	}
+
+	return carried_error;
+}
 /*
  * This test verifies that JSON input correctly
  * sets an ACL entry.
@@ -60,6 +130,7 @@ static int json_set_and_verify(const char *path)
 	int error, i;
 	int carried_error = 0;
 	struct nfs4_acl *old_acl = NULL;
+	bool verbose = true;
 
 	/*
 	 * Test sets directory-specific flags
@@ -74,8 +145,8 @@ static int json_set_and_verify(const char *path)
 		return -1;
 	}
 
-	for (i = 0; i < ARRAY_SIZE(json2ace); i++) {
-		printf("Testing [%s]\n", json2ace[i].name);
+	for (i = 0; i < ARRAY_SIZE(acetemplates); i++) {
+		printf("Testing [%s]\n", acetemplates[i].name);
 		char *acltxt1 = NULL;
 		char *acltxt2 = NULL;
 		char *acetxt = NULL;
@@ -84,17 +155,17 @@ static int json_set_and_verify(const char *path)
 		json_t *jsacl = NULL, *jsace = NULL;
 		int json_flags = ACL_TEXT_NUMERIC_IDS;
 
-		if (json2ace[i].verbose) {
+		if (verbose) {
 			json_flags |= ACL_TEXT_VERBOSE;
 		}
 
 		new_ace = nfs4_new_ace(
 		    true,
-		    json2ace[i].ace.type,
-		    json2ace[i].ace.flag,
-		    json2ace[i].ace.access_mask,
-		    json2ace[i].ace.whotype,
-		    json2ace[i].ace.who);
+		    acetemplates[i].ace.type,
+		    acetemplates[i].ace.flag,
+		    acetemplates[i].ace.access_mask,
+		    acetemplates[i].ace.whotype,
+		    acetemplates[i].ace.who_id);
 		if (new_ace == NULL) {
 			errx(EX_OSERR, "%s: nfs4_new_ace() failed.", path);
 		};
@@ -250,11 +321,12 @@ const struct {
 	const char *name;
 	int (*test_acl_fn)(const char *path);
 } tests[] = {
+	{ "basic_read_and_write", set_and_verify_aces },	/* basic validation of reading and writing of ACLs */
 #if 0 	/* disabled until development complete */
-	{ "json_basic", json_set_and_verify },		/* basic validation of reading and writing via JSON */
+	{ "json_basic", json_set_and_verify },			/* basic validation of reading and writing via JSON */
 #endif
-	{ "random1", random_test_1 },			/* set an array of different xattr size. check errno */
-	{ "random2", random_test_2 },			/* stress test with randomized xattr buffers */
+	{ "random1", random_test_1 },				/* set an array of different xattr size. check errno */
+	{ "random2", random_test_2 },				/* stress test with randomized xattr buffers */
 };
 
 int run_tests(const char *path)

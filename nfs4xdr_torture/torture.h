@@ -24,7 +24,7 @@ const struct nfs4_ace owner_basic_full_control = (struct nfs4_ace) {
 	.access_mask = NFS4_ACE_FULL_SET,
 	.flag = (NFS4_ACE_FILE_INHERIT_ACE | NFS4_ACE_DIRECTORY_INHERIT_ACE | NFS4_ACE_OWNER),
         .whotype = NFS4_ACL_WHO_OWNER,
-	.who = NFS4_ACL_WHO_OWNER_STRING,
+	.who_id = -1,
 };
 
 const struct nfs4_ace named_basic_full_control = (struct nfs4_ace) {
@@ -32,16 +32,14 @@ const struct nfs4_ace named_basic_full_control = (struct nfs4_ace) {
 	.access_mask = NFS4_ACE_FULL_SET,
 	.flag = (NFS4_ACE_FILE_INHERIT_ACE | NFS4_ACE_DIRECTORY_INHERIT_ACE),
         .whotype = NFS4_ACL_WHO_NAMED,
-	.who = "0",
+	.who_id = 8675309,
 };
 
 const struct {
 	const char *name;
 	const struct nfs4_ace ace;
-	bool verbose;
-} json2ace[] = {
-	{ "owner-full_control-basic", owner_basic_full_control, false },
-	{ "owner-full_control-advanced", owner_basic_full_control, true },
-	{ "named-full_control-basic", named_basic_full_control, false },
+} acetemplates[] = {
+	{ "owner-full_control-basic", owner_basic_full_control },
+	{ "named-full_control-basic", named_basic_full_control },
 };
 #endif

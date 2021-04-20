@@ -68,20 +68,20 @@ static char *_get_name(uid_t id, bool is_group) {
 	return out;
 }
 
-int acl_nfs4_get_who(struct nfs4_ace *ace, uid_t *_who_id, char *_who_str, size_t buf_size)
+int acl_nfs4_get_who(struct nfs4_ace *ace, nfs4_acl_id_t *_who_id, char *_who_str, size_t buf_size)
 {
 	char *who_str = NULL;
-	uid_t who_id = -1;
+	nfs4_acl_id_t who_id = -1;
 	size_t wholen, ncopied;
 
-	if (ace == NULL || ace->who == NULL) {
+	if (ace == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
 
 	switch(ace->whotype) {
 	case NFS4_ACL_WHO_NAMED:
-		who_id = strtol(ace->who, NULL, 10);
+		who_id = ace->who_id;
 		/*
 		 * If who string is requested, then
 		 * try conversion of id to name. If this fails
@@ -90,7 +90,11 @@ int acl_nfs4_get_who(struct nfs4_ace *ace, uid_t *_who_id, char *_who_str, size_
 		if (_who_str != NULL) {
 			who_str = _get_name(who_id, NFS4_IS_GROUP(ace->flag));
 			if (who_str == NULL) {
-				who_str = ace->who;
+				snprintf(_who_str, buf_size, "%d", who_id);
+				if (_who_id != NULL) {
+					*_who_id = who_id;
+				}
+				return 0;
 			}
 		}
 		break;

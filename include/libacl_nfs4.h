@@ -196,7 +196,7 @@ TAILQ_HEAD(ace_container_list_head, ace_container);
 /**** Public functions ****/
 
 /** Manipulation functions **/
-extern int			acl_nfs4_set_who(struct nfs4_ace*, int, char*);
+extern int			acl_nfs4_set_who(struct nfs4_ace*, int, char*, nfs4_acl_id_t *idp);
 extern struct nfs4_acl *	acl_nfs4_copy_acl(struct nfs4_acl *);
 extern struct nfs4_acl *	acl_nfs4_xattr_load(char *, int, u32);
 extern struct nfs4_acl *	acl_nfs4_strip(struct nfs4_acl *);
@@ -210,7 +210,7 @@ extern int			nfs4_insert_ace_at(struct nfs4_acl *acl, struct nfs4_ace *ace, unsi
 #define nfs4_prepend_ace(acl, ace)  nfs4_insert_ace_at(acl, ace, 0)
 #define nfs4_append_ace(acl, ace)   nfs4_insert_ace_at(acl, ace, acl->naces)
 extern struct nfs4_ace *	nfs4_new_ace(int is_directory, nfs4_acl_type_t type, nfs4_acl_flag_t flag,
-					     nfs4_acl_perm_t access_mask, nfs4_acl_who_t whotype, char* who);
+					     nfs4_acl_perm_t access_mask, nfs4_acl_who_t whotype, nfs4_acl_id_t id);
 extern struct nfs4_acl *	nfs4_new_acl(u32);
 
 extern int			nfs4_insert_file_aces(struct nfs4_acl *acl, FILE* fd, unsigned int index);
@@ -238,7 +238,7 @@ extern char *			nfs4_acl_spec_from_file(FILE *f);
 
 
 /** Access Functions **/
-extern int			acl_nfs4_get_who(struct nfs4_ace*, uid_t *who_id, char *who_str, size_t str_size);
+extern int			acl_nfs4_get_who(struct nfs4_ace*, nfs4_acl_id_t *who_id, char *who_str, size_t str_size);
 extern inline int		acl_nfs4_get_whotype(char*);
 
 extern struct nfs4_ace *	nfs4_get_first_ace(struct nfs4_acl *);

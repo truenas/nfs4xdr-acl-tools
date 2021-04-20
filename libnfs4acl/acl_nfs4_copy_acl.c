@@ -65,8 +65,7 @@ struct nfs4_acl * acl_nfs4_copy_acl(struct nfs4_acl * acl)
 				goto free_failed;
 		}
 		new_ace = nfs4_new_ace(acl->is_directory, ace->type, ace->flag,
-				ace->access_mask, acl_nfs4_get_whotype(ace->who),
-				ace->who);
+				ace->access_mask, ace->whotype, ace->who_id);
 		if (new_ace == NULL)
 			goto free_failed;
 

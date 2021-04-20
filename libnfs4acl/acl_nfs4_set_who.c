@@ -54,77 +54,84 @@
  * regular username / group so it's an acceptable
  * error return here.
  */
-static uid_t _get_id(char *who, bool is_group) {
-	uid_t out;
+static nfs4_acl_id_t _get_id(char *who, bool is_group) {
+	nfs4_acl_id_t out;
 	unsigned long id;
+	char *buf = NULL;
 	char *remainder = NULL;
-	struct passwd *pwd = NULL;
-	struct group *grp = NULL;
+	struct passwd *pwd = NULL, pw;
+	struct group *grp = NULL, gr;
+	int error;
 
+	/* First check whether this is actually a UID */
 	id = strtoul(who, &remainder, 10);
 	if (*remainder == '\0') {
-		return (uid_t)id;
+		return ((uid_t)id);
 	}
+
+	buf = malloc(65536);
 	if (is_group) {
-		grp = getgrnam(who);
-		if (grp == NULL) {
-			return (uid_t)-1;
+		error = getgrnam_r(who, &gr, buf, 65536, &grp);
+		if (error) {
+			free(buf);
+			return ((uid_t)-1);
 		}
 		out = grp->gr_gid;
 	}
 	else {
-		pwd = getpwnam(who);
-		if (pwd == NULL) {
-			return (uid_t)-1;
+		error = getpwnam_r(who, &pw, buf, 65536, &pwd);
+		if (error) {
+			free(buf);
+			return ((uid_t)-1);
 		}
 		out = pwd->pw_uid;
 
 	}
-	return out;
+	free(buf);
+	return (out);
 }
 
-int acl_nfs4_set_who(struct nfs4_ace* ace, int type, char *who)
+int acl_nfs4_set_who(struct nfs4_ace* ace, int type, char *who, nfs4_acl_id_t *idp)
 {
-	uid_t id;
+	nfs4_acl_id_t id = -1;
 
 	if (ace == NULL) {
-		goto inval_failed;
+		errno = EINVAL;
+		return (-1);
 	}
 
 	switch (type) {
 		case NFS4_ACL_WHO_NAMED:
-			if (who == NULL) {
-				fprintf(stderr, "ERROR: named user seems to have no name.\n");
-				goto inval_failed;
+			if ((who == NULL) && (idp == NULL)) {
+				fprintf(stderr, "acl_nfs4_set_who(): "
+				    "no principal was provided\n");
+				errno = EINVAL;
+				return (-1);
 			}
-			id = _get_id(who, NFS4_IS_GROUP(ace->flag));
-			if (id == -1) {
-				fprintf(stderr, "acl_nfs4_set_who(): name [%s] "
-					"is invalid\n", who);
-				goto inval_failed;
+			else if (who != NULL) {
+				id = _get_id(who, NFS4_IS_GROUP(ace->flag));
+				if (id == -1) {
+					fprintf(stderr, "acl_nfs4_set_who(): "
+					    "name [%s] is invalid\n", who);
+					errno = EINVAL;
+					return (-1);
+				}
 			}
-			snprintf(ace->who, NFS4_MAX_PRINCIPALSIZE, "%d", id);
+			else {
+				id = *idp;
+			}
 			break;
 		case NFS4_ACL_WHO_OWNER:
-			snprintf(ace->who, NFS4_MAX_PRINCIPALSIZE,
-				 NFS4_ACL_WHO_OWNER_STRING);
-			break;
 		case NFS4_ACL_WHO_GROUP:
-			snprintf(ace->who, NFS4_MAX_PRINCIPALSIZE,
-				 NFS4_ACL_WHO_GROUP_STRING);
-			break;
 		case NFS4_ACL_WHO_EVERYONE:
-			snprintf(ace->who, NFS4_MAX_PRINCIPALSIZE,
-				 NFS4_ACL_WHO_EVERYONE_STRING);
+			id = -1;
 			break;
 		default:
-			goto inval_failed;
+			errno = EINVAL;
+			return -1;
 	}
 	ace->whotype = type;
+	ace->who_id = id;
 
-	return 0;
-
-inval_failed:
-	errno = EINVAL;
-	return -1;
+	return (0);
 }
