@@ -54,10 +54,12 @@
  * regular username / group so it's an acceptable
  * error return here.
  */
-static nfs4_acl_id_t _get_id(char *who, bool is_group) {
+#define	NAMRBUF	65536
+
+static nfs4_acl_id_t _get_id(const char *who, bool is_group) {
 	nfs4_acl_id_t out;
 	unsigned long id;
-	char *buf = NULL;
+	char buf[NAMRBUF] = {0};
 	char *remainder = NULL;
 	struct passwd *pwd = NULL, pw;
 	struct group *grp = NULL, gr;
@@ -69,29 +71,25 @@ static nfs4_acl_id_t _get_id(char *who, bool is_group) {
 		return ((uid_t)id);
 	}
 
-	buf = malloc(65536);
 	if (is_group) {
-		error = getgrnam_r(who, &gr, buf, 65536, &grp);
+		error = getgrnam_r(who, &gr, &buf, sizeof(buf), &grp);
 		if (error) {
-			free(buf);
 			return ((uid_t)-1);
 		}
 		out = grp->gr_gid;
 	}
 	else {
-		error = getpwnam_r(who, &pw, buf, 65536, &pwd);
+		error = getpwnam_r(who, &pw, &buf, sizeof(buf), &pwd);
 		if (error) {
-			free(buf);
 			return ((uid_t)-1);
 		}
 		out = pwd->pw_uid;
 
 	}
-	free(buf);
 	return (out);
 }
 
-int acl_nfs4_set_who(struct nfs4_ace* ace, int type, char *who, nfs4_acl_id_t *idp)
+int acl_nfs4_set_who(struct nfs4_ace* ace, int type, const char *who, nfs4_acl_id_t *idp)
 {
 	nfs4_acl_id_t id = -1;
 

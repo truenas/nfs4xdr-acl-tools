@@ -108,7 +108,7 @@ typedef uid_t     nfs4_acl_id_t;
 struct nfs4_ace {
 	nfs4_acl_type_t		type;
 	nfs4_acl_who_t		whotype;
-	nfs4_acl_id_t		who_id;	
+	nfs4_acl_id_t		who_id;
 	nfs4_acl_flag_t		flag;
 	nfs4_acl_perm_t		access_mask;
 	TAILQ_ENTRY(nfs4_ace)	l_ace;

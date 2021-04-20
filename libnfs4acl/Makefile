@@ -52,7 +52,6 @@ LT_AGE = 0
 
 #LIBACL_NFS4_CFILES = \
 #	acl_nfs4_get_who.c \
-#	acl_nfs4_get_whotype.c \
 #	acl_nfs4_new.c \
 #	acl_nfs4_print.c \
 #	acl_nfs4_add_ace.c \
@@ -75,15 +74,11 @@ LT_AGE = 0
 #	__acl_nfs4_string2ace.c \
 #	nfs4_print_ace.c \
 #	nfs4_print_ace_verbose.c \
-#	nfs4_get_ace_type.c \
-#	nfs4_get_ace_flags.c \
-#	nfs4_get_ace_access.c \
 #	nfs4_set_acl.c
 
 LIBACL_NFS4_CFILES = \
 	acl_nfs4_copy_acl.c \
 	acl_nfs4_get_who.c \
-	acl_nfs4_get_whotype.c \
 	acl_nfs4_set_who.c \
 	acl_nfs4_xattr_load.c \
 	acl_nfs4_xattr_pack.c \
@@ -91,9 +86,6 @@ LIBACL_NFS4_CFILES = \
 	nfs4_get_acl.c \
 	nfs4_acl_spec_from_file.c \
 	nfs4_acl_utils.c \
-	nfs4_get_ace_access.c \
-	nfs4_get_ace_flags.c \
-	nfs4_get_ace_type.c \
 	nfs4_insert_file_aces.c \
 	nfs4_insert_string_aces.c \
 	nfs4_free_acl.c \

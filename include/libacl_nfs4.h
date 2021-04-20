@@ -44,75 +44,15 @@
 #include <bsd/string.h>
 #include "nfs4.h"
 
-/* flags'/perms' corresponding display characters */
-#define TYPE_ALLOW			'A'
-#define TYPE_DENY 			'D'
-#define TYPE_AUDIT			'U'
-#define TYPE_ALARM			'L'
-
-#define FLAG_FILE_INHERIT		'f'
-#define FLAG_DIR_INHERIT		'd'
-#define FLAG_NO_PROPAGATE_INHERIT	'n'
-#define FLAG_INHERIT_ONLY		'i'
-#define FLAG_INHERITED			'I'
-#define FLAG_SUCCESSFUL_ACCESS		'S'
-#define FLAG_FAILED_ACCESS		'F'
-#define FLAG_GROUP			'g'
-#define FLAG_OWNER_AT			'O'
-#define FLAG_GROUP_AT			'G'
-#define FLAG_EVERYONE_AT		'E'
-
-#define PERM_READ_DATA			'r'
-#define PERM_WRITE_DATA			'w'
-#define PERM_APPEND_DATA		'a'
-
-#define PERM_LIST_DIR			PERM_READ_DATA
-#define PERM_CREATE_FILE		PERM_WRITE_DATA
-#define PERM_CREATE_SUBDIR		PERM_APPEND_DATA
-#define PERM_DELETE_CHILD		'D'
-
-#define PERM_DELETE			'd'
-#define PERM_EXECUTE			'x'
-#define PERM_READ_ATTR			't'
-#define PERM_WRITE_ATTR			'T'
-#define PERM_READ_NAMED_ATTR		'n'
-#define PERM_WRITE_NAMED_ATTR		'N'
-#define PERM_READ_ACL			'c'
-#define PERM_WRITE_ACL			'C'
-#define PERM_WRITE_OWNER		'o'
-#define PERM_SYNCHRONIZE		'y'
-
-#define PERM_GENERIC_READ		'R'
-#define PERM_GENERIC_WRITE		'W'
-#define PERM_GENERIC_EXECUTE		'X'
-
 #define ACL_TEXT_NUMERIC_IDS		0x0000001
 #define ACL_TEXT_VERBOSE		0x0000002
 #define ACL_TEXT_APPEND_ID		0x0000004
 
-/* mode bit translations: */
-#define NFS4_READ_MODE NFS4_ACE_READ_DATA
-#define NFS4_WRITE_MODE (NFS4_ACE_WRITE_DATA \
-		| NFS4_ACE_APPEND_DATA | NFS4_ACE_DELETE_CHILD)
-#define NFS4_EXECUTE_MODE NFS4_ACE_EXECUTE
-#define NFS4_ANYONE_MODE (NFS4_ACE_READ_ATTRIBUTES | NFS4_ACE_READ_ACL | \
-		NFS4_ACE_SYNCHRONIZE)
-#define NFS4_OWNER_MODE (NFS4_ACE_WRITE_ATTRIBUTES | NFS4_ACE_WRITE_ACL)
-
+#if 0 /* see comment in nfs4_new_ace.c */
 /* flags used to simulate posix default ACLs */
-#define NFS4_INHERITANCE_FLAGS (NFS4_ACE_FILE_INHERIT_ACE \
-		| NFS4_ACE_DIRECTORY_INHERIT_ACE | NFS4_ACE_INHERIT_ONLY_ACE)
-
 #define NFS4_ACE_MASK_IGNORE (NFS4_ACE_DELETE | NFS4_ACE_WRITE_OWNER \
 		| NFS4_ACE_READ_NAMED_ATTRS | NFS4_ACE_WRITE_NAMED_ATTRS)
-
-/* XXX not sure about the following.  Note that e.g. DELETE_CHILD is wrong in
- * general (should only be ignored on files). */
-#define MASK_EQUAL(mask1, mask2) \
-	(((mask1) & NFS4_ACE_MASK_ALL & ~NFS4_ACE_MASK_IGNORE & \
-	  					~NFS4_ACE_DELETE_CHILD) \
-	 == ((mask2) & NFS4_ACE_MASK_ALL & ~NFS4_ACE_MASK_IGNORE & \
-		 				~NFS4_ACE_DELETE_CHILD))
+#endif
 
 /*
  * NFS4_MAX_ACESIZE -- the number of bytes in the string representation we
@@ -130,6 +70,7 @@
  *
  * which equals 410.  let's try that for now.
  */
+/* Fixme: this is used for buffer size when reading ACEs from spec file */
 #define NFS4_MAX_ACESIZE	(3 + 1 + 7 + NFS4_MAX_PRINCIPALSIZE + 14)
 
 /*
@@ -140,6 +81,7 @@
  * representation doesn't directly compare to the xattr size, this
  * is probably a reasonable guess.
  */
+/* Fixme: This value is used for buffer allocation when reading from spec file */
 #define NFS4_MAX_ACLSIZE	(65536)
 
 #define NFS41ACLMAXACES		(128)
@@ -153,6 +95,11 @@
 #define ACLSIZE_IS_VALID(sz)	((sz >= (sizeof(nfsacl41i) + sizeof(nfsace4i))) && \
 				(((sz - sizeof(nfsacl41i)) % sizeof(nfsace4i) == 0)))
 
+/*
+ * There is an option to compile with a different xattr name.
+ * This is useful for testing on server without ZFS / native NFSv4 ACLs
+ *
+ */
 /* NFS4 acl xattr name */
 #define SYSTEM_XATTR "system.nfs4_acl_xdr"
 #define SECURITY_XATTR "security.nfs4acl_xdr"
@@ -166,25 +113,11 @@
 /* Macro for finding empty tailqs */
 #define TAILQ_IS_EMPTY(head) (head.tqh_first == NULL)
 
-/* Flags to pass certain properties around */
-#define NFS4_ACL_NOFLAGS			0x00
-#define NFS4_ACL_ISFILE				0x00
-#define NFS4_ACL_ISDIR				0x01
-#define NFS4_ACL_OWNER				0x02
-#define NFS4_ACL_REQUEST_DEFAULT	0x04
-#define NFS4_ACL_RAW				0x01
-
-#define NFS4_XDR_MOD				4
-
 #ifndef ARRAY_SIZE
 #define	ARRAY_SIZE(x)		(sizeof (x) / sizeof (x[0]))
 #endif
 
 typedef u_int32_t u32;
-
-enum {	ACL_NFS4_NOT_USED = 0,
-		ACL_NFS4_USED
-};
 
 struct ace_container {
 	struct nfs4_ace *ace;
@@ -196,7 +129,7 @@ TAILQ_HEAD(ace_container_list_head, ace_container);
 /**** Public functions ****/
 
 /** Manipulation functions **/
-extern int			acl_nfs4_set_who(struct nfs4_ace*, int, char*, nfs4_acl_id_t *idp);
+extern int			acl_nfs4_set_who(struct nfs4_ace*, int, const char*, nfs4_acl_id_t *idp);
 extern struct nfs4_acl *	acl_nfs4_copy_acl(struct nfs4_acl *);
 extern struct nfs4_acl *	acl_nfs4_xattr_load(char *, int, u32);
 extern struct nfs4_acl *	acl_nfs4_strip(struct nfs4_acl *);
@@ -225,7 +158,6 @@ bool 				acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 								 mode_t mode, bool skip_mode,
 								 int is_dir);
 
-
 /** Get and Set ACL functions **/
 extern struct nfs4_acl * 	nfs4_acl_get_file(const char *path);
 extern struct nfs4_acl * 	nfs4_acl_get_fd(int fd);
@@ -239,7 +171,6 @@ extern char *			nfs4_acl_spec_from_file(FILE *f);
 
 /** Access Functions **/
 extern int			acl_nfs4_get_who(struct nfs4_ace*, nfs4_acl_id_t *who_id, char *who_str, size_t str_size);
-extern inline int		acl_nfs4_get_whotype(char*);
 
 extern struct nfs4_ace *	nfs4_get_first_ace(struct nfs4_acl *);
 extern struct nfs4_ace *	nfs4_get_next_ace(struct nfs4_ace **);
@@ -251,15 +182,13 @@ extern int			nfs4_print_acl_json(char *path, int flags);
 extern void			nfs4_print_acl(FILE *fp, struct nfs4_acl *acl);
 extern int			nfs4_print_ace(FILE *fp, struct nfs4_ace *ace, u32 isdir);
 extern int			nfs4_print_ace_verbose(struct nfs4_ace * ace, u32 isdir);
-extern char*			nfs4_get_ace_type(struct nfs4_ace*, char*, int);
-extern char*			nfs4_get_ace_flags(struct nfs4_ace*, char*);
-extern char*			nfs4_get_ace_access(struct nfs4_ace*, char*, int);
+
+/* Flag manipulation functions */
 extern bool			nfs4_aclflag_to_text(nfs4_acl_aclflags_t flags4, char **out);
 extern bool			nfs4_aclflag_from_text(char *flags, nfs4_acl_aclflags_t *flags4p);
 
 
 /** misc **/
-extern int 			nfs4_ace_cmp(struct nfs4_ace *lhs, struct nfs4_ace *rhs);
 extern bool			ace_is_equal(struct nfs4_ace *a, struct nfs4_ace *b);
 extern bool			aces_are_equal(struct nfs4_acl *a, struct nfs4_acl *b);
 extern unsigned long		strtoul_reals(char *s, int base);

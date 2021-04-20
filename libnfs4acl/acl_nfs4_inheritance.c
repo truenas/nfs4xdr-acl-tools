@@ -289,7 +289,7 @@ bool acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 		if (user_allow_first != 0) {
 			new_ace = nfs4_new_ace(
 				is_dir, NFS4_ACE_ACCESS_ALLOWED_ACE_TYPE,
-				0, user_allow_first, NFS4_ACL_WHO_OWNER, -1 
+				NFS4_ACE_OWNER, user_allow_first, NFS4_ACL_WHO_OWNER, -1
 			);
 			if (new_ace == NULL) {
 				return false;
@@ -302,7 +302,7 @@ bool acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 		if (user_deny != 0) {
 			new_ace = nfs4_new_ace(
 				is_dir, NFS4_ACE_ACCESS_DENIED_ACE_TYPE,
-				0, user_deny, NFS4_ACL_WHO_OWNER, -1
+				NFS4_ACE_OWNER, user_deny, NFS4_ACL_WHO_OWNER, -1
 			);
 			if (new_ace == NULL) {
 				return false;
@@ -336,7 +336,7 @@ bool acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 	if (!skip_mode) {
 		new_ace = nfs4_new_ace(
 			is_dir, NFS4_ACE_ACCESS_ALLOWED_ACE_TYPE,
-			0, user_allow, NFS4_ACL_WHO_OWNER, -1 
+			NFS4_ACE_OWNER, user_allow, NFS4_ACL_WHO_OWNER, -1
 		);
 		if (new_ace == NULL) {
 			return false;
@@ -347,7 +347,7 @@ bool acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 		}
 		new_ace = nfs4_new_ace(
 			is_dir, NFS4_ACE_ACCESS_ALLOWED_ACE_TYPE,
-			NFS4_ACE_IDENTIFIER_GROUP,
+			(NFS4_ACE_GROUP | NFS4_ACE_IDENTIFIER_GROUP),
 			group_allow, NFS4_ACL_WHO_GROUP, -1
 		);
 		if (new_ace == NULL) {
@@ -359,7 +359,7 @@ bool acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 		}
 		new_ace = nfs4_new_ace(
 			is_dir, NFS4_ACE_ACCESS_ALLOWED_ACE_TYPE,
-			0, everyone_allow, NFS4_ACL_WHO_EVERYONE, -1
+			NFS4_ACE_EVERYONE, everyone_allow, NFS4_ACL_WHO_EVERYONE, -1
 		);
 		if (new_ace == NULL) {
 			return false;
