@@ -513,19 +513,17 @@ json_ace_get_who(json_t *_jsace, int idx, struct nfs4_ace *entry, json_t *_verro
 	tag = json_string_value(jstag);
 	if (strcmp(tag, "owner@") == 0) {
 		whotype = NFS4_ACL_WHO_OWNER;
-		entry->flag |= NFS4_ACE_OWNER;
 		return acl_nfs4_set_who(entry, whotype, NULL, &id);
 	}
 
 	if (strcmp(tag, "group@") == 0) {
 		whotype = NFS4_ACL_WHO_GROUP;
-		entry->flag |= (NFS4_ACE_GROUP | NFS4_ACE_IDENTIFIER_GROUP);
+		entry->flag |= NFS4_ACE_IDENTIFIER_GROUP;
 		return acl_nfs4_set_who(entry, whotype, NULL, &id);
 	}
 
 	if (strcmp(tag, "everyone@") == 0) {
 		whotype = NFS4_ACL_WHO_EVERYONE;
-		entry->flag |= NFS4_ACE_EVERYONE;
 		return acl_nfs4_set_who(entry, whotype, NULL, &id);
 	}
 

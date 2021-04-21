@@ -10,7 +10,6 @@
 
 #include<sys/types.h>
 #include<sys/queue.h>
-#define NFS4_DEBUG 1
 
 #define NFS4_ACE_ACCESS_ALLOWED_ACE_TYPE 0
 #define NFS4_ACE_ACCESS_DENIED_ACE_TYPE  1
@@ -30,9 +29,6 @@
 #define NFS4_ACE_FAILED_ACCESS_ACE_FLAG       0x00000020
 #define NFS4_ACE_IDENTIFIER_GROUP             0x00000040
 #define NFS4_ACE_INHERITED_ACE                0x00000080
-#define NFS4_ACE_OWNER                        0x00001000
-#define NFS4_ACE_GROUP                        0x00002000
-#define NFS4_ACE_EVERYONE                     0x00004000
 
 #define NFS4_IS_GROUP(flag) (flag & NFS4_ACE_IDENTIFIER_GROUP)
 #define NFS4_ACE_FLAGS_DIRECTORY             (NFS4_ACE_FILE_INHERIT_ACE | NFS4_ACE_DIRECTORY_INHERIT_ACE | NFS4_ACE_INHERIT_ONLY_ACE | \

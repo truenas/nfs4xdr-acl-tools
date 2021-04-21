@@ -34,7 +34,6 @@
  */
 
 
-#include <netinet/in.h>
 #include <stdbool.h>
 #include "libacl_nfs4.h"
 #include "rpc/xdr.h"
@@ -99,21 +98,17 @@ struct nfs4_acl * acl_nfs4_xattr_load(char *xattr_v, int xattr_size, u32 is_dir)
 		nfs4_acl_id_t id;
 
 		if (nacep->iflag & ACEI4_SPECIAL_WHO) {
-			printf("XXX: Special\n");
 			switch(nacep->who) {
 			case ACE4_SPECIAL_OWNER:
 				whotype = NFS4_ACL_WHO_OWNER;
-				flag |= NFS4_ACE_OWNER;
 				id = -1;
 				break;
 			case ACE4_SPECIAL_GROUP:
 				whotype = NFS4_ACL_WHO_GROUP;
-				flag |= NFS4_ACE_GROUP;
 				id = -1;
 				break;
 			case ACE4_SPECIAL_EVERYONE:
 				whotype = NFS4_ACL_WHO_EVERYONE;
-				flag |= NFS4_ACE_EVERYONE;
 				id = -1;
 				break;
 			default:
@@ -125,7 +120,6 @@ struct nfs4_acl * acl_nfs4_xattr_load(char *xattr_v, int xattr_size, u32 is_dir)
 
 		}
 		else {
-			printf("XXX: named\n");
 			whotype = NFS4_ACL_WHO_NAMED;
 			id = nacep->who;
 		}
@@ -142,6 +136,7 @@ struct nfs4_acl * acl_nfs4_xattr_load(char *xattr_v, int xattr_size, u32 is_dir)
 		}
 
 	}
+	xdr_free(xdr_nfsacl41i, (char *)nacl);
 
 	free(nacl);
 	return acl;

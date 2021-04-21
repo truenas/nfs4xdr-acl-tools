@@ -37,6 +37,7 @@
 #include <unistd.h>
 #include <sys/random.h>
 #include <sys/xattr.h>
+#include <time.h>
 #include "nfs41acl.h"
 #include "torture.h"
 
@@ -51,7 +52,94 @@ static struct option long_options[] = {
 static char *to_run = NULL;
 bool run_all = false;
 
+static struct timespec ts_current(void)
+{
+	struct timespec ts;
+	int error;
+	error = clock_gettime(CLOCK_MONOTONIC, &ts);
+	if (error) {
+		errx(EX_OSERR, "clock_gettime() failed: %s\n", strerror(errno));
+	}
+	return ts;
+}
 
+static double elapsed(const struct timespec *ts1)
+{
+	struct timespec ts2;
+	ts2 = ts_current();
+	return (ts2.tv_sec - ts1->tv_sec) +
+		(ts2.tv_nsec - ts1->tv_nsec)*1.0e-9;
+}
+
+static struct nfs4_acl *generate_acl_with_entries(uint entries)
+{
+	struct nfs4_acl *out = NULL;
+	int error, i;
+
+	out = nfs4_new_acl(true);
+	if (out == NULL) {
+		errx(EX_OSERR, "nfs4_new_acl() failed: %s", strerror(errno));
+	}
+	for (i = 0; i < entries; i++) {
+		struct nfs4_ace *ace = NULL;
+		ace = nfs4_new_ace(
+		    true,
+		    acetemplates[0].ace.type,
+		    acetemplates[0].ace.flag,
+		    acetemplates[0].ace.access_mask,
+		    acetemplates[0].ace.whotype,
+		    acetemplates[0].ace.who_id);
+		if (ace == NULL) {
+			errx(EX_OSERR, "nfs4_new_ace() failed.");
+		}
+		error = nfs4_append_ace(out, ace);
+		if (error) {
+			errx(EX_OSERR, "nfs4_append_ace() failed");
+		}
+	}
+	if (out->naces != entries) {
+		errx(EX_OSERR, "failed to generate ACL with %d entries", entries);
+	}
+	return out;
+}
+
+static int acl_set_bench(const char *path)
+{
+	int error = 0;
+	int aclsize[10] = { 1, 4, 8, 12, 16, 20, 24, 28, 32, 36 };
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(aclsize); i++) {
+		printf("Bench ACL [%d] entries\n", aclsize[i]);
+		struct nfs4_acl *to_set = NULL;
+		struct timespec start;
+		int error;
+		size_t cnt = 0;
+		to_set = generate_acl_with_entries(aclsize[i]);
+		if (to_set == NULL) {
+			errx(EX_OSERR, "%s: failed to generate ACL entry", path);
+		}
+		start = ts_current();
+		do {
+			error = nfs4_acl_set_file(to_set, path);
+			if (error) {
+				errx(EX_OSERR, "%s: nfs4_acl_set_file() failed: %s\n",
+				    path, strerror(errno));
+			}
+			cnt++;
+		} while (elapsed(&start) < 10.0);
+
+		printf("set ACL with %d entries, %zu times in 10 seconds\n", aclsize[i], cnt);
+		nfs4_free_acl(to_set);
+	}
+	return error;
+}
+
+/*
+ * Basic test that sets an ACL with single ACE on
+ * the give path. Iterates through all ACE whotypes.
+ * Resets ACL on path after each iteration.
+ */
 static int set_and_verify_aces(const char *path)
 {
 	int error, i;
@@ -81,8 +169,6 @@ static int set_and_verify_aces(const char *path)
 		if (new_ace == NULL) {
 			errx(EX_OSERR, "%s: nfs4_new_ace() failed.", path);
 		};
-		printf("NEW ACE: type: %d, flag: 0x%08x, access_maks 0x%08x, whotype: %d\n",
-			new_ace->type, new_ace->flag, new_ace->access_mask, new_ace->whotype);		
 
 		new_acl = nfs4_new_acl(old_acl->is_directory);
 		if (new_acl == NULL) {
@@ -99,26 +185,30 @@ static int set_and_verify_aces(const char *path)
 			errx(EX_OSERR, "%s: nfs4_acl_set_file() failed: %s", path, strerror(errno));
 		}
 
-		nfs4_free_acl(new_acl);
-
-		new_acl = nfs4_acl_get_file(path);
-		if (new_acl == NULL) {
+		ret_acl = nfs4_acl_get_file(path);
+		if (ret_acl == NULL) {
 			errx(EX_OSERR, "%s: nfs4_acl_get_file() failed for new ACL.", path);
 		}
-		ret_ace = nfs4_get_first_ace(new_acl);
+
+		ret_ace = nfs4_get_first_ace(ret_acl);
 		if (ret_ace == NULL) {
 			errx(EX_OSERR, "%s: nfs4_acl_get_first_ace() failed for new ACL.", path);
 		}
 
 		is_equal = ace_is_equal(new_ace, ret_ace);
 		if (!is_equal) {
-			fprintf(stderr, "%s: resulting ACEs differ", path);
+			fprintf(stderr, "%s: resulting ACEs differ\n", path);
 			carried_error = -1;
 		}
 		nfs4_free_acl(new_acl);
 		nfs4_free_acl(ret_acl);
 	}
 
+	error = nfs4_acl_set_file(old_acl, path);
+	if (error) {
+		errx(EX_OSERR, "%s: nfs4_acl_set_file() failed to restore original ACL: %s", path, strerror(errno));
+	}
+	nfs4_free_acl(old_acl);
 	return carried_error;
 }
 /*
@@ -321,6 +411,7 @@ const struct {
 	const char *name;
 	int (*test_acl_fn)(const char *path);
 } tests[] = {
+	{ "bench_acl_set", acl_set_bench },			/* benchmark various ACL sizes and setting */
 	{ "basic_read_and_write", set_and_verify_aces },	/* basic validation of reading and writing of ACLs */
 #if 0 	/* disabled until development complete */
 	{ "json_basic", json_set_and_verify },			/* basic validation of reading and writing via JSON */

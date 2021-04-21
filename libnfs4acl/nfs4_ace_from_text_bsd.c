@@ -69,19 +69,17 @@ parse_tag(const char *str, struct nfs4_ace *entry, int *need_qualifier)
 
 	if (strcmp(str, "owner@") == 0) {
 		whotype = NFS4_ACL_WHO_OWNER;
-		entry->flag |= NFS4_ACE_OWNER;
 		return acl_nfs4_set_who(entry, whotype, NULL, &id);
 	}
 
 	if (strcmp(str, "group@") == 0) {
 		whotype = NFS4_ACL_WHO_GROUP;
-		entry->flag |= (NFS4_ACE_GROUP | NFS4_ACE_IDENTIFIER_GROUP);
+		entry->flag |= (NFS4_ACE_IDENTIFIER_GROUP);
 		return acl_nfs4_set_who(entry, whotype, NULL, &id);
 	}
 
 	if (strcmp(str, "everyone@") == 0) {
 		whotype = NFS4_ACL_WHO_EVERYONE;
-		entry->flag |= NFS4_ACE_EVERYONE;
 		return acl_nfs4_set_who(entry, whotype, NULL,  &id);
 	}
 

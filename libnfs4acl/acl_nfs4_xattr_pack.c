@@ -33,7 +33,6 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <netinet/in.h>
 #include <rpc/xdr.h>
 #include "libacl_nfs4.h"
 #include "nfs41acl.h"
@@ -46,7 +45,7 @@ size_t acl_nfs4_xattr_pack(struct nfs4_acl * acl, char** bufp)
 {
 	struct nfs4_ace *ace = NULL;
 	nfsacl41i *nacl = NULL;
-	int i, result;
+	int i;
 	XDR xdr = {0};
 	bool ok;
 	size_t acl_size = 0, xdr_size = 0;
@@ -59,6 +58,11 @@ size_t acl_nfs4_xattr_pack(struct nfs4_acl * acl, char** bufp)
 	acl_size = ACES_2_ACLSIZE(acl->naces);
 	xdr_size = ACES_2_XDRSIZE(acl->naces);
 	nacl = calloc(1, acl_size);
+	if (nacl == NULL) {
+		errno = ENOMEM;
+		goto failed;
+	}
+
 	*bufp = (char*) calloc(1, acl_size);
 	if (*bufp == NULL) {
 		errno = ENOMEM;
