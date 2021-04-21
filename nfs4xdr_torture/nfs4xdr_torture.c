@@ -75,20 +75,21 @@ static struct nfs4_acl *generate_acl_with_entries(uint entries)
 {
 	struct nfs4_acl *out = NULL;
 	int error, i;
-
 	out = nfs4_new_acl(true);
 	if (out == NULL) {
 		errx(EX_OSERR, "nfs4_new_acl() failed: %s", strerror(errno));
 	}
 	for (i = 0; i < entries; i++) {
 		struct nfs4_ace *ace = NULL;
+		int idx = 0;
+		idx = i % ARRAY_SIZE(acetemplates);
 		ace = nfs4_new_ace(
 		    true,
-		    acetemplates[0].ace.type,
-		    acetemplates[0].ace.flag,
-		    acetemplates[0].ace.access_mask,
-		    acetemplates[0].ace.whotype,
-		    acetemplates[0].ace.who_id);
+		    acetemplates[idx].ace.type,
+		    acetemplates[idx].ace.flag,
+		    acetemplates[idx].ace.access_mask,
+		    acetemplates[idx].ace.whotype,
+		    acetemplates[idx].ace.who_id);
 		if (ace == NULL) {
 			errx(EX_OSERR, "nfs4_new_ace() failed.");
 		}
@@ -103,6 +104,55 @@ static struct nfs4_acl *generate_acl_with_entries(uint entries)
 	return out;
 }
 
+/*
+ * Push upper limit of number of ACEs allowed in ACL.
+ */
+static int acl_set_max_cnt(const char *path)
+{
+	printf("Testing setting maximum number of ACLs\n");
+	int error = 0, i;
+	struct nfs4_acl *original = NULL;
+	original = nfs4_acl_get_file(path);
+	if (original == NULL) {
+		errx(EX_OSERR, "%s: nfs4_acl_get_file() failed: %s\n",
+		    path, strerror(errno));
+	}
+
+	for (i = 0; i <= NFS41ACLMAXACES; i ++) {
+		struct nfs4_acl *to_set = NULL;
+		int acl_size = i + 1;
+		to_set = generate_acl_with_entries(acl_size);
+		if (to_set == NULL) {
+			nfs4_free_acl(original);
+			errx(EX_OSERR, "%s: failed to generate ACL entry", path);
+		}
+		error = nfs4_acl_set_file(to_set, path);
+		if (error) {
+			if (errno == E2BIG) {
+				printf("Stopped at %d aces in ACL\n", i);
+				nfs4_free_acl(to_set);
+				error = nfs4_acl_set_file(original, path);
+				if (error) {
+					errx(EX_OSERR, "failed to reset original ACL: %s",
+					    strerror(errno));
+				}
+				nfs4_free_acl(original);
+				return 0;
+			}
+			nfs4_free_acl(original);
+			nfs4_free_acl(to_set);
+			errx(EX_OSERR, "%s: nfs4_acl_set_file() failed on ace %d: %s",
+			    path, acl_size, strerror(errno));
+		}
+		nfs4_free_acl(to_set);
+	}
+	nfs4_free_acl(original);
+	errx(EX_OSERR, "Exceeded MAX permitted ACEs on ACL: %d", (i + 1));
+}
+
+/*
+ * Check rates at which we can set ACLs of varying sizes
+ */
 static int acl_set_bench(const char *path)
 {
 	int error = 0;
@@ -113,7 +163,6 @@ static int acl_set_bench(const char *path)
 		printf("Bench ACL [%d] entries\n", aclsize[i]);
 		struct nfs4_acl *to_set = NULL;
 		struct timespec start;
-		int error;
 		size_t cnt = 0;
 		to_set = generate_acl_with_entries(aclsize[i]);
 		if (to_set == NULL) {
@@ -131,6 +180,46 @@ static int acl_set_bench(const char *path)
 
 		printf("set ACL with %d entries, %zu times in 10 seconds\n", aclsize[i], cnt);
 		nfs4_free_acl(to_set);
+	}
+	return error;
+}
+
+/*
+ * Check rates at which we can get ACLs of varying sizes
+ */
+static int acl_get_bench(const char *path)
+{
+	int error = 0;
+	int aclsize[10] = { 1, 4, 8, 12, 16, 20, 24, 28, 32, 36 };
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(aclsize); i++) {
+		printf("Bench ACL [%d] entries\n", aclsize[i]);
+		struct nfs4_acl *to_set = NULL, *retrieved = NULL;
+		struct timespec start;
+		size_t cnt = 0;
+		to_set = generate_acl_with_entries(aclsize[i]);
+		if (to_set == NULL) {
+			errx(EX_OSERR, "%s: failed to generate ACL entry", path);
+		}
+		error = nfs4_acl_set_file(to_set, path);
+		if (error) {
+			errx(EX_OSERR, "%s: nfs4_acl_set_file() failed: %s\n",
+			    path, strerror(errno));
+		}
+		nfs4_free_acl(to_set);
+		start = ts_current();
+		do {
+			retrieved = nfs4_acl_get_file(path);
+			if (retrieved == NULL) {
+				errx(EX_OSERR, "%s: nfs4_acl_get_file() failed: %s\n",
+				    path, strerror(errno));
+			}
+			nfs4_free_acl(retrieved);
+			cnt++;
+		} while (elapsed(&start) < 10.0);
+
+		printf("Retrieved ACL with %d entries, %zu times in 10 seconds\n", aclsize[i], cnt);
 	}
 	return error;
 }
@@ -411,7 +500,9 @@ const struct {
 	const char *name;
 	int (*test_acl_fn)(const char *path);
 } tests[] = {
-	{ "bench_acl_set", acl_set_bench },			/* benchmark various ACL sizes and setting */
+	{ "set_max_aces", acl_set_max_cnt },
+	{ "bench_acl_get", acl_get_bench },
+	{ "bench_acl_set", acl_set_bench },
 	{ "basic_read_and_write", set_and_verify_aces },	/* basic validation of reading and writing of ACLs */
 #if 0 	/* disabled until development complete */
 	{ "json_basic", json_set_and_verify },			/* basic validation of reading and writing via JSON */
@@ -488,9 +579,9 @@ static void usage(int label)
 	"    -t, --test          name of test to run\n\n";
 
 	fprintf(stderr, _usage, execname);
-	fprintf(stderr, "Available tests: ");
+	fprintf(stderr, "Available tests:\n");
 	for (i = 0; i < ARRAY_SIZE(tests); i++) {
-		fprintf(stderr, "%s %s", i ? "," : "", tests[i].name);
+		fprintf(stderr, "\t%s\n", tests[i].name);
 	}
 	fprintf(stderr, "\n\n\"all\" may be used to run all of the aforementioned tests.\n");
 }

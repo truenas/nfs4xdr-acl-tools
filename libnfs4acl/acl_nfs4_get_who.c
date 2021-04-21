@@ -45,26 +45,34 @@
 #include <pwd.h>
 #include <grp.h>
 
+#define	NAMRBUF	65536
 
 static char *_get_name(uid_t id, bool is_group) {
 	char *out = NULL;
-	struct passwd *pwd = NULL;
-	struct group *grp = NULL;
+	char *buf = NULL;
+	struct passwd *pwd = NULL, pw;
+	struct group *grp = NULL, gr;
+	int error;
+
+	buf = calloc(1, NAMRBUF);
 	if (is_group) {
-		grp = getgrgid(id);
-		if (grp == NULL) {
+		error = getgrgid_r(id, &gr, buf, sizeof(buf), &grp);
+		if (error) {
+			free(buf);
 			return NULL;
 		}
 		out = grp->gr_name;
 	}
 	else {
-		pwd = getpwuid(id);
-		if (pwd == NULL) {
+		error = getpwuid_r(id, &pw, buf, sizeof(buf), &pwd);
+		if (error) {
+			free(buf);
 			return NULL;
 		}
 		out = pwd->pw_name;
 
 	}
+	free(buf);
 	return out;
 }
 

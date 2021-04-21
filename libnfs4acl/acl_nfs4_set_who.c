@@ -59,7 +59,7 @@
 static nfs4_acl_id_t _get_id(const char *who, bool is_group) {
 	nfs4_acl_id_t out;
 	unsigned long id;
-	char buf[NAMRBUF] = {0};
+	char *buf = NULL;
 	char *remainder = NULL;
 	struct passwd *pwd = NULL, pw;
 	struct group *grp = NULL, gr;
@@ -70,22 +70,25 @@ static nfs4_acl_id_t _get_id(const char *who, bool is_group) {
 	if (*remainder == '\0') {
 		return ((uid_t)id);
 	}
-
+	buf = calloc(1, NAMRBUF);
 	if (is_group) {
-		error = getgrnam_r(who, &gr, &buf, sizeof(buf), &grp);
+		error = getgrnam_r(who, &gr, buf, sizeof(buf), &grp);
 		if (error) {
+			free(buf);
 			return ((uid_t)-1);
 		}
 		out = grp->gr_gid;
 	}
 	else {
-		error = getpwnam_r(who, &pw, &buf, sizeof(buf), &pwd);
+		error = getpwnam_r(who, &pw, buf, sizeof(buf), &pwd);
 		if (error) {
+			free(buf);
 			return ((uid_t)-1);
 		}
 		out = pwd->pw_uid;
 
 	}
+	free(buf);
 	return (out);
 }
 

@@ -52,7 +52,6 @@ struct nfs4_acl * acl_nfs4_xattr_load(char *xattr_v, int xattr_size, u32 is_dir)
 	nfs4_acl_flag_t flag;
 	nfs4_acl_perm_t access_mask;
 	XDR xdr = {0};
-	size_t acl_size = 0;
 	bool ok;
 
 
@@ -73,23 +72,18 @@ struct nfs4_acl * acl_nfs4_xattr_load(char *xattr_v, int xattr_size, u32 is_dir)
 	}
 
 	num_aces = XDRSIZE_2_ACES(xattr_size);
-	acl_size = ACES_2_ACLSIZE(num_aces);
-
-	nacl = (nfsacl41i *)calloc(1, acl_size);
-	if (nacl == NULL) {
-		errno = ENOMEM;
-		goto err1;
-	}
+	nacl = calloc(1, sizeof(nfsacl41i));
 
 	xdrmem_create(&xdr, bufp, xattr_size, XDR_DECODE);
 	ok = xdr_nfsacl41i(&xdr, nacl);
 	if (!ok) {
 		errno = ENOMEM;
-		free(nacl);
 		goto err1;
 	}
+
+	acl->aclflags4 = nacl->na41_flag;
 	for(ace_n = 0; num_aces > ace_n ; ace_n++) {
-		nfsace4i *nacep = &nacl->na41_aces.na41_aces_val[ace_n]; 
+		nfsace4i *nacep = &nacl->na41_aces.na41_aces_val[ace_n];
 		/* Get the acl type */
 		type = (nfs4_acl_type_t)nacep->type;
 		flag = (nfs4_acl_flag_t)nacep->flag;
@@ -114,7 +108,6 @@ struct nfs4_acl * acl_nfs4_xattr_load(char *xattr_v, int xattr_size, u32 is_dir)
 			default:
 				fprintf(stderr, "Unknown id: 0x%08x\n", nacep->who);
 				errno = EINVAL;
-				free(nacl);
 				goto err1;
 			}
 
@@ -126,22 +119,21 @@ struct nfs4_acl * acl_nfs4_xattr_load(char *xattr_v, int xattr_size, u32 is_dir)
 
 		ace = nfs4_new_ace(is_dir, type, flag, access_mask, whotype, id);
 		if (ace == NULL) {
-			free(nacl);
 			goto err1;
 		}
 
 		if (nfs4_append_ace(acl, ace)){
-			free(nacl);
 			goto err1;
 		}
 
 	}
-	xdr_free(xdr_nfsacl41i, (char *)nacl);
-
+	free(nacl-> na41_aces.na41_aces_val);
 	free(nacl);
 	return acl;
 
 err1:
+	free(nacl-> na41_aces.na41_aces_val);
+	free(nacl);
 	nfs4_free_acl(acl);
 	return NULL;
 }

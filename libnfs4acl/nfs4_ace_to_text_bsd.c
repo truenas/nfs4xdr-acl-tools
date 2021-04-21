@@ -39,7 +39,7 @@ static int
 format_who(char *str, size_t size, struct nfs4_ace *entry, bool numeric)
 {
 	int error;
-	char who_str[NFS4_MAX_PRINCIPALSIZE] = {0};
+	char who_str[NFS4_MAX_PRINCIPALSIZE + 1] = {0};
 	char *tag = NULL;
 	uid_t who_id;
 
@@ -54,8 +54,8 @@ format_who(char *str, size_t size, struct nfs4_ace *entry, bool numeric)
 			snprintf(str, size, "%s:%d", tag, who_id);
 		}
 		else {
-			error = acl_nfs4_get_who(entry, NULL, &who_str,
-						 NFS4_MAX_PRINCIPALSIZE);
+			error = acl_nfs4_get_who(entry, NULL, who_str,
+						 sizeof(who_str));
 			if (error) {
 				return error;
 			}

@@ -40,8 +40,8 @@ who_to_json(json_t *_parent, struct nfs4_ace *entry, bool numeric)
 {
 	int error;
 	char *tag = NULL;
-	char who_str[NFS4_MAX_PRINCIPALSIZE] = {0};
-	int who_id = -1;
+	char who_str[NFS4_MAX_PRINCIPALSIZE + 1] = {0};
+	nfs4_acl_id_t who_id = -1;
 
 	switch (entry->whotype) {
 	case NFS4_ACL_WHO_NAMED:
@@ -53,8 +53,8 @@ who_to_json(json_t *_parent, struct nfs4_ace *entry, bool numeric)
 			}
 		}
 		else {
-			error = acl_nfs4_get_who(entry, &who_id, &who_str,
-						 NFS4_MAX_PRINCIPALSIZE);
+			error = acl_nfs4_get_who(entry, &who_id, who_str,
+						 sizeof(who_str));
 			if (error) {
 				return (error);
 			}
@@ -83,7 +83,7 @@ who_to_json(json_t *_parent, struct nfs4_ace *entry, bool numeric)
 			return (error);
 		}
 	}
-	error = json_object_set_new(_parent, "id", json_integer(who_id));
+	error = json_object_set_new(_parent, "id", json_integer((int)who_id));
 	if (error) {
 		return (error);
 	}

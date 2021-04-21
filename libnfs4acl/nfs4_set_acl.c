@@ -48,7 +48,6 @@ int nfs4_acl_set_file(struct nfs4_acl *acl, const char *path)
 
 	acl_size = acl_nfs4_xattr_pack(acl, &xdrbuf);
 	if (acl_size < ACES_2_XDRSIZE(1)) {
-		warnx("nfs4_acl_set_file() failed");
 		free(xdrbuf);
 		return (-1);
 	}
@@ -72,10 +71,6 @@ int nfs4_acl_set_file(struct nfs4_acl *acl, const char *path)
 #else
 	res = setxattr(path, ACL_NFS4_XATTR, xdrbuf, acl_size, XATTR_REPLACE);
 #endif
-	if (res < 0) {
-		warnx("nfs4_acl_set_file() failed");
-	}
-
 	free(xdrbuf);
 	return (res);
 }
@@ -89,7 +84,6 @@ int nfs4_acl_set_fd(struct nfs4_acl *acl, int fd)
 
 	acl_size = acl_nfs4_xattr_pack(acl, &xdrbuf);
 	if (acl_size < ACES_2_XDRSIZE(1)) {
-		warnx("nfs4_acl_set_file() failed");
 		free(xdrbuf);
 		return (-1);
 	}
@@ -117,9 +111,6 @@ int nfs4_acl_set_fd(struct nfs4_acl *acl, int fd)
 	 */
 	res = fsetxattr(fd, ACL_NFS4_XATTR, xdrbuf, acl_size, XATTR_REPLACE);
 #endif
-	if (res < 0) {
-		warnx("nfs4_acl_set_fd() failed: %s", strerror(errno));
-	}
 
 	free(xdrbuf);
 	return res;
