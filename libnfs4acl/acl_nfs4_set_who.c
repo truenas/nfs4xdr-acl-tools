@@ -68,22 +68,22 @@ static nfs4_acl_id_t _get_id(const char *who, bool is_group) {
 	/* First check whether this is actually a UID */
 	id = strtoul(who, &remainder, 10);
 	if (*remainder == '\0') {
-		return ((uid_t)id);
+		return ((nfs4_acl_id_t)id);
 	}
 	buf = calloc(1, NAMRBUF);
 	if (is_group) {
-		error = getgrnam_r(who, &gr, buf, sizeof(buf), &grp);
-		if (error) {
+		error = getgrnam_r(who, &gr, buf, NAMRBUF, &grp);
+		if (error || grp == NULL) {
 			free(buf);
-			return ((uid_t)-1);
+			return ((nfs4_acl_id_t)-1);
 		}
 		out = grp->gr_gid;
 	}
 	else {
-		error = getpwnam_r(who, &pw, buf, sizeof(buf), &pwd);
-		if (error) {
+		error = getpwnam_r(who, &pw, buf, NAMRBUF, &pwd);
+		if (error || pwd == NULL) {
 			free(buf);
-			return ((uid_t)-1);
+			return ((nfs4_acl_id_t)-1);
 		}
 		out = pwd->pw_uid;
 

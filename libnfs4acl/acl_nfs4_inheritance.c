@@ -259,7 +259,7 @@ bool acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 		user_allow |= NFS4_ACE_READ_DATA;
 	}
 	if (mode & S_IWUSR) {
-		user_allow |= NFS4_ACE_WRITE_DATA;
+		user_allow |= NFS4_ACE_POSIX_WRITE;
 	}
 	if (mode & S_IXUSR) {
 		user_allow |= NFS4_ACE_EXECUTE;
@@ -268,7 +268,7 @@ bool acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 		group_allow |= NFS4_ACE_READ_DATA;
 	}
 	if (mode & S_IWGRP) {
-		group_allow |= NFS4_ACE_WRITE_DATA;
+		group_allow |= NFS4_ACE_POSIX_WRITE;
 	}
 	if (mode & S_IXGRP) {
 		group_allow |= NFS4_ACE_EXECUTE;
@@ -277,7 +277,7 @@ bool acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 		everyone_allow |= NFS4_ACE_READ_DATA;
 	}
 	if (mode & S_IWOTH) {
-		everyone_allow |= NFS4_ACE_WRITE_DATA;
+		everyone_allow |= NFS4_ACE_POSIX_WRITE;
 	}
 	if (mode & S_IXOTH) {
 		everyone_allow |= NFS4_ACE_EXECUTE;

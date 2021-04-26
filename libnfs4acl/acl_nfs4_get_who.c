@@ -53,23 +53,22 @@ static char *_get_name(uid_t id, bool is_group) {
 	struct passwd *pwd = NULL, pw;
 	struct group *grp = NULL, gr;
 	int error;
-
 	buf = calloc(1, NAMRBUF);
 	if (is_group) {
-		error = getgrgid_r(id, &gr, buf, sizeof(buf), &grp);
-		if (error) {
+		error = getgrgid_r(id, &gr, buf, NAMRBUF, &grp);
+		if (error || (grp == NULL)) {
 			free(buf);
 			return NULL;
 		}
-		out = grp->gr_name;
+		out = strdup(grp->gr_name);
 	}
 	else {
-		error = getpwuid_r(id, &pw, buf, sizeof(buf), &pwd);
-		if (error) {
+		error = getpwuid_r(id, &pw, buf, NAMRBUF, &pwd);
+		if (error || pwd == NULL) {
 			free(buf);
 			return NULL;
 		}
-		out = pwd->pw_name;
+		out = strdup(pwd->pw_name);
 
 	}
 	free(buf);
@@ -78,6 +77,7 @@ static char *_get_name(uid_t id, bool is_group) {
 
 int acl_nfs4_get_who(struct nfs4_ace *ace, nfs4_acl_id_t *_who_id, char *_who_str, size_t buf_size)
 {
+	int rv = 0;
 	char *who_str = NULL;
 	nfs4_acl_id_t who_id = -1;
 	size_t wholen, ncopied;
@@ -139,7 +139,10 @@ int acl_nfs4_get_who(struct nfs4_ace *ace, nfs4_acl_id_t *_who_id, char *_who_st
 	if (ncopied != wholen) {
 		fprintf(stderr, "acl_nfs4_get_who(): truncated who_str\n");
 		errno = EINVAL;
-		return -1;
+		rv = -1;
 	}
-	return 0;
+	if (ace->whotype == NFS4_ACL_WHO_NAMED) {
+		free(who_str);
+	}
+	return rv;
 }
