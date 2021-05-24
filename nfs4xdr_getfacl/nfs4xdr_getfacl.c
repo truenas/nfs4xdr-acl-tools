@@ -51,6 +51,7 @@ static struct option long_options[] = {
         { "numeric",            0, 0, 'n' },
         { "verbose",            0, 0, 'v' },
         { "quiet",              0, 0, 'q' },
+        { "json",               0, 0, 'j' },
         { NULL,                 0, 0, 0,  },
 };
 
@@ -113,10 +114,11 @@ int main(int argc, char **argv)
 	int flags = 0, i, error, opt;
 	int carried_error = 0;
 	bool quiet = false;
+	bool json = false;
 
 	execname = basename(argv[0]);
 
-        while ((opt = getopt_long(argc, argv, "qinvHh?", long_options, NULL)) != -1) {
+        while ((opt = getopt_long(argc, argv, "qijnvHh?", long_options, NULL)) != -1) {
                 switch (opt) {
 		case 'i':
 			flags |= ACL_TEXT_APPEND_ID;
@@ -129,6 +131,9 @@ int main(int argc, char **argv)
 			break;
 		case 'q':
 			quiet = true;
+			break;
+		case 'j':
+			json = true;
 			break;
 		case 'H':
 			more_help();
@@ -150,7 +155,12 @@ int main(int argc, char **argv)
 	}
 
 	for (i = 0; i < argc; i++) {
-		error = print_acl_path(argv[i], flags, quiet);
+		if (json) {
+			error = nfs4_print_acl_json(argv[i], flags);
+		}
+		else {
+			error = print_acl_path(argv[i], flags, quiet);
+		}
 		if (error) {
 			carried_error = error;
 		}

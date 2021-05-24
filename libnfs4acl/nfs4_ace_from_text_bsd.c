@@ -62,33 +62,25 @@ parse_tag(const char *str, struct nfs4_ace *entry, int *need_qualifier)
 {
 
 	assert(need_qualifier != NULL);
-	char who_str[NFS4_MAX_PRINCIPALSIZE] = {0};
 	int whotype;
+	nfs4_acl_id_t id = -1;
 
 	*need_qualifier = 0;
 
 	if (strcmp(str, "owner@") == 0) {
-		snprintf(who_str, NFS4_MAX_PRINCIPALSIZE,
-			 NFS4_ACL_WHO_OWNER_STRING);
 		whotype = NFS4_ACL_WHO_OWNER;
-		entry->flag |= NFS4_ACE_OWNER;
-		return acl_nfs4_set_who(entry, whotype, who_str);
+		return acl_nfs4_set_who(entry, whotype, NULL, &id);
 	}
 
 	if (strcmp(str, "group@") == 0) {
-		snprintf(who_str, NFS4_MAX_PRINCIPALSIZE,
-			 NFS4_ACL_WHO_GROUP_STRING);
 		whotype = NFS4_ACL_WHO_GROUP;
-		entry->flag |= (NFS4_ACE_GROUP | NFS4_ACE_IDENTIFIER_GROUP);
-		return acl_nfs4_set_who(entry, whotype, who_str);
+		entry->flag |= (NFS4_ACE_IDENTIFIER_GROUP);
+		return acl_nfs4_set_who(entry, whotype, NULL, &id);
 	}
 
 	if (strcmp(str, "everyone@") == 0) {
-		snprintf(who_str, NFS4_MAX_PRINCIPALSIZE,
-			 NFS4_ACL_WHO_EVERYONE_STRING);
 		whotype = NFS4_ACL_WHO_EVERYONE;
-		entry->flag |= NFS4_ACE_EVERYONE;
-		return acl_nfs4_set_who(entry, whotype, who_str);
+		return acl_nfs4_set_who(entry, whotype, NULL,  &id);
 	}
 
 	/*
@@ -98,12 +90,12 @@ parse_tag(const char *str, struct nfs4_ace *entry, int *need_qualifier)
 	 */
 	if (strcmp(str, "user") == 0 || strcmp(str, "u") == 0) {
 		*need_qualifier = 1;
-		return 0;
+		return (0);
 	}
 	if (strcmp(str, "group") == 0 || strcmp(str, "g") == 0) {
 		*need_qualifier = 1;
 		entry->flag |= NFS4_ACE_IDENTIFIER_GROUP;
-		return 0;
+		return (0);
 	}
 
 	warnx("malformed ACL: invalid \"tag\" field");
@@ -131,7 +123,7 @@ parse_qualifier(char *str, struct nfs4_ace *entry, int *need_qualifier)
 		return (-1);
 	}
 
-	return acl_nfs4_set_who(entry, NFS4_ACL_WHO_NAMED, str);
+	return acl_nfs4_set_who(entry, NFS4_ACL_WHO_NAMED, str, NULL);
 }
 
 static int
@@ -193,7 +185,7 @@ parse_appended_id(char *str, struct nfs4_ace *entry)
 		return (-1);
 	}
 
-	return acl_nfs4_set_who(entry, NFS4_ACL_WHO_NAMED, str);
+	return acl_nfs4_set_who(entry, NFS4_ACL_WHO_NAMED, str, NULL);
 }
 
 static int
@@ -222,7 +214,7 @@ struct nfs4_ace
 			     0, /* flag */
 			     0, /* access_mask */
 			     NFS4_ACL_WHO_OWNER,
-			     NFS4_ACL_WHO_OWNER_STRING);
+			     -1);
 
 	if (entry == NULL) {
 		fprintf(stderr, "Failed to create new entry\n");
@@ -293,9 +285,9 @@ struct nfs4_ace
 			goto malformed_field;
 	}
 #ifdef NFS4_DEBUG
-	fprintf(stderr, "ACL string: [%s] -> whotype: [%d], who: [%s], "
+	fprintf(stderr, "ACL string: [%s] -> whotype: [%d], who: [%d], "
 			"access_mask: [0x%08x], flag: [0x%08x], type: [%d]\n",
-			str, entry->whotype, entry->who, entry->access_mask,
+			str, entry->whotype, entry->who_id, entry->access_mask,
 			entry->flag, entry->type);
 #endif
 	return (entry);

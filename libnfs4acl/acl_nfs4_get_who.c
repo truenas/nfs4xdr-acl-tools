@@ -45,43 +45,51 @@
 #include <pwd.h>
 #include <grp.h>
 
+#define	NAMRBUF	65536
 
 static char *_get_name(uid_t id, bool is_group) {
 	char *out = NULL;
-	struct passwd *pwd = NULL;
-	struct group *grp = NULL;
+	char *buf = NULL;
+	struct passwd *pwd = NULL, pw;
+	struct group *grp = NULL, gr;
+	int error;
+	buf = calloc(1, NAMRBUF);
 	if (is_group) {
-		grp = getgrgid(id);
-		if (grp == NULL) {
+		error = getgrgid_r(id, &gr, buf, NAMRBUF, &grp);
+		if (error || (grp == NULL)) {
+			free(buf);
 			return NULL;
 		}
-		out = grp->gr_name;
+		out = strdup(grp->gr_name);
 	}
 	else {
-		pwd = getpwuid(id);
-		if (pwd == NULL) {
+		error = getpwuid_r(id, &pw, buf, NAMRBUF, &pwd);
+		if (error || pwd == NULL) {
+			free(buf);
 			return NULL;
 		}
-		out = pwd->pw_name;
+		out = strdup(pwd->pw_name);
 
 	}
+	free(buf);
 	return out;
 }
 
-int acl_nfs4_get_who(struct nfs4_ace *ace, uid_t *_who_id, char *_who_str, size_t buf_size)
+int acl_nfs4_get_who(struct nfs4_ace *ace, nfs4_acl_id_t *_who_id, char *_who_str, size_t buf_size)
 {
+	int rv = 0;
 	char *who_str = NULL;
-	uid_t who_id = -1;
+	nfs4_acl_id_t who_id = -1;
 	size_t wholen, ncopied;
 
-	if (ace == NULL || ace->who == NULL) {
+	if (ace == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
 
 	switch(ace->whotype) {
 	case NFS4_ACL_WHO_NAMED:
-		who_id = strtol(ace->who, NULL, 10);
+		who_id = ace->who_id;
 		/*
 		 * If who string is requested, then
 		 * try conversion of id to name. If this fails
@@ -90,7 +98,11 @@ int acl_nfs4_get_who(struct nfs4_ace *ace, uid_t *_who_id, char *_who_str, size_
 		if (_who_str != NULL) {
 			who_str = _get_name(who_id, NFS4_IS_GROUP(ace->flag));
 			if (who_str == NULL) {
-				who_str = ace->who;
+				snprintf(_who_str, buf_size, "%d", who_id);
+				if (_who_id != NULL) {
+					*_who_id = who_id;
+				}
+				return 0;
 			}
 		}
 		break;
@@ -127,7 +139,10 @@ int acl_nfs4_get_who(struct nfs4_ace *ace, uid_t *_who_id, char *_who_str, size_
 	if (ncopied != wholen) {
 		fprintf(stderr, "acl_nfs4_get_who(): truncated who_str\n");
 		errno = EINVAL;
-		return -1;
+		rv = -1;
 	}
-	return 0;
+	if (ace->whotype == NFS4_ACL_WHO_NAMED) {
+		free(who_str);
+	}
+	return rv;
 }

@@ -60,6 +60,7 @@
 #define EDIT_ACTION		5
 #define STRIP_ACTION		6
 #define SET_FLAGS_ACTION	7
+#define APPLY_JSON_ACTION	8
 
 /* Walks */
 #define DEFAULT_WALK		0	/* Follow symbolic link args, Skip links in subdirectories */
@@ -98,6 +99,7 @@ static struct option long_options[] = {
 	{ "remove-file",	1, 0, 'X' },
 	{ "modify",		1, 0, 'm' },
 	{ "strip",		0, 0, 's' },
+	{ "apply-json",		0, 0, 'j' },
 	{ "edit",		0, 0, 'e' },
 	{ "test",		0, 0, 't' },
 	{ "help",		0, 0, 'h' },
@@ -144,7 +146,7 @@ int main(int argc, char **argv)
 		return err;
 	}
 
-	while ((opt = getopt_long(argc, argv, "-:a:A:s:S:x:X:m:p:bethvHRPL", long_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "-:a:A:s:S:x:X:j:m:p:bethvHRPL", long_options, NULL)) != -1) {
 		switch (opt) {
 			case 'a':
 				mod_string = optarg;
@@ -178,6 +180,11 @@ int main(int argc, char **argv)
 			case 'b':
 				assert_wu_wei(action);
 				action = STRIP_ACTION;
+				break;
+			case 'j':
+				assert_wu_wei(action);
+				action = APPLY_JSON_ACTION;
+				mod_string = optarg;
 				break;
 			case 'p':
 				assert_wu_wei(action);
@@ -448,13 +455,23 @@ static int do_apply_action(const char *path, const struct stat *_st)
 		acl = newacl;
 		break;
 
+	case APPLY_JSON_ACTION:
+		newacl = get_acl_json(mod_string, acl->is_directory);
+		if (newacl == NULL) {
+			goto failed;
+		}
+		nfs4_free_acl(acl);
+		acl = newacl;
+		break;
+
 	case SET_FLAGS_ACTION:
 		ok = nfs4_aclflag_from_text(mod_string, &aclflags);
 		if (!ok) {
 			goto failed;
 		}
-		acl->aclflags4 = aclflags;
+		acl->aclflags4 = (aclflags & ACL_FLAGS_ALL);
 		break;
+
 	}
 
 	if (is_test) {
@@ -575,6 +592,7 @@ static void __usage(const char *name, int is_ef)
 	"   -s acl_spec		 set ACL to acl_spec (replaces existing ACL)\n"
 	"   -S file		 read ACL entries to set from file\n"
 	"   -b file		 strip ACL entry from the file\n"
+	"   -j <json>		 replace ACL with one represented in JSON\n"
 	"   -p aclflags file	 set specified ACL flags on file\n"
 	"   -e, --edit 		 edit ACL in $EDITOR (DEFAULT: " EDITOR "); save on clean exit\n"
 	"   -m from_ace to_ace	 modify in-place: replace 'from_ace' with 'to_ace'\n"

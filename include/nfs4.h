@@ -29,9 +29,6 @@
 #define NFS4_ACE_FAILED_ACCESS_ACE_FLAG       0x00000020
 #define NFS4_ACE_IDENTIFIER_GROUP             0x00000040
 #define NFS4_ACE_INHERITED_ACE                0x00000080
-#define NFS4_ACE_OWNER                        0x00001000
-#define NFS4_ACE_GROUP                        0x00002000
-#define NFS4_ACE_EVERYONE                     0x00004000
 
 #define NFS4_IS_GROUP(flag) (flag & NFS4_ACE_IDENTIFIER_GROUP)
 #define NFS4_ACE_FLAGS_DIRECTORY             (NFS4_ACE_FILE_INHERIT_ACE | NFS4_ACE_DIRECTORY_INHERIT_ACE | NFS4_ACE_INHERIT_ONLY_ACE | \
@@ -61,7 +58,8 @@
 #define NFS4_ACE_GENERIC_EXECUTE             (NFS4_ACE_EXECUTE | NFS4_ACE_READ_ATTRIBUTES | NFS4_ACE_READ_ACL | NFS4_ACE_SYNCHRONIZE)
 #define NFS4_ACE_MASK_ALL                    (NFS4_ACE_GENERIC_READ | NFS4_ACE_GENERIC_WRITE | NFS4_ACE_GENERIC_EXECUTE | NFS4_ACE_DELETE | NFS4_ACE_WRITE_OWNER)
 #define NFS4_ACE_BASE_ALLOW_PSARC            (NFS4_ACE_READ_ACL | NFS4_ACE_READ_ATTRIBUTES | NFS4_ACE_SYNCHRONIZE | NFS4_ACE_READ_NAMED_ATTRS)
-#define NFS4_ACE_USER_ALLOW_PSARC            (NFS4_ACE_WRITE_ACL | NFS4_ACE_APPEND_DATA | NFS4_ACE_WRITE_OWNER | NFS4_ACE_WRITE_ATTRIBUTES | NFS4_ACE_WRITE_NAMED_ATTRS)
+#define NFS4_ACE_USER_ALLOW_PSARC            (NFS4_ACE_WRITE_ACL | NFS4_ACE_WRITE_OWNER | NFS4_ACE_WRITE_ATTRIBUTES | NFS4_ACE_WRITE_NAMED_ATTRS)
+#define NFS4_ACE_POSIX_WRITE                 (NFS4_ACE_WRITE_DATA | NFS4_ACE_APPEND_DATA | NFS4_ACE_DELETE_CHILD)
 
 #define NFS4_ACE_FULL_SET                    NFS4_ACE_MASK_ALL
 #define NFS4_ACE_READ_SET                    (NFS4_ACE_READ_DATA | NFS4_ACE_READ_ATTRIBUTES | NFS4_ACE_READ_NAMED_ATTRS | NFS4_ACE_READ_ACL)
@@ -102,13 +100,14 @@ typedef u_int32_t nfs4_acl_flag_t;
 typedef u_int32_t nfs4_acl_perm_t;
 typedef u_int32_t nfs4_acl_aclflags_t;
 typedef u_int32_t nfs4_acl_who_t;
+typedef uid_t     nfs4_acl_id_t;
 
 struct nfs4_ace {
 	nfs4_acl_type_t		type;
 	nfs4_acl_who_t		whotype;
+	nfs4_acl_id_t		who_id;
 	nfs4_acl_flag_t		flag;
 	nfs4_acl_perm_t		access_mask;
-	char			who[NFS4_MAX_PRINCIPALSIZE];
 	TAILQ_ENTRY(nfs4_ace)	l_ace;
 };
 

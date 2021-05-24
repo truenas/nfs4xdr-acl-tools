@@ -64,6 +64,7 @@
 #define IS_VERBOSE(x) (x & WA_VERBOSE)
 #define IS_POSIXACL(x) (x & WA_POSIXACL)
 #define MAY_CHMOD(x) (x & WA_MAYCHMOD)
+#define MAY_XDEV(x) (x & WA_TRAVERSE)
 
 #define	MAX_ACL_DEPTH		2
 
@@ -625,7 +626,7 @@ auto_inherit_acl(FTSENT *entry, struct nfs4_acl *cur_acl, int flags)
 		}
 		new_ace = nfs4_new_ace(is_dir, ace->type, ace->flag,
 				       ace->access_mask, ace->whotype,
-				       ace->who);
+				       ace->who_id);
 		if (new_ace == NULL) {
 			nfs4_free_acl(to_inherit);
 			nfs4_free_acl(new_acl);
@@ -651,7 +652,7 @@ auto_inherit_acl(FTSENT *entry, struct nfs4_acl *cur_acl, int flags)
 	    ace = nfs4_get_next_ace(&ace)) {
 		new_ace = nfs4_new_ace(is_dir, ace->type, ace->flag,
 				       ace->access_mask, ace->whotype,
-				       ace->who);
+				       ace->who_id);
 		if (new_ace == NULL) {
 			nfs4_free_acl(to_inherit);
 			nfs4_free_acl(new_acl);
@@ -718,6 +719,11 @@ do_action(struct windows_acl_info *w, FTS *ftsp, FTSENT *entry, int action)
 		rval = IS_POSIXACL(w->flags) ?
 		       remove_acl_posix(w, entry) :
 		       strip_acl(w, entry);
+		if ((rval != 0) && (errno == EOPNOTSUPP) && MAY_XDEV(w->flags)) {
+			rval = IS_POSIXACL(w->flags) ?
+				strip_acl(w, entry) :
+				remove_acl_posix(w, entry);
+		}
 		break;
 
 	/*
@@ -748,6 +754,12 @@ do_action(struct windows_acl_info *w, FTS *ftsp, FTSENT *entry, int action)
 		rval = IS_POSIXACL(w->flags) ?
 		       set_acl_posix(w, entry) :
 		       set_acl(w, entry);
+		if ((rval != 0) && (errno == EOPNOTSUPP) && !IS_POSIXACL(w->flags)) {
+			fts_set(ftsp, entry, FTS_SKIP);
+			warnx("%s: path does not support NFSv4 ACLs. Skipping.",
+			      entry->fts_path);
+			rval = 0;
+		}
 		break;
 
 	/*
@@ -895,15 +907,41 @@ usage_check(struct windows_acl_info *w)
 }
 
 static int
+copy_parent_entries(struct nfs4_acl *parent_acl, int level)
+{
+	theacls[level].dacl = acl_nfs4_copy_acl(parent_acl);
+	if (theacls[level].dacl == NULL) {
+		warnx("Failed to copy parent NFSv4 ACL");
+		return (-1);
+	}
+	theacls[level].facl = acl_nfs4_copy_acl(parent_acl);
+	if (theacls[level].facl == NULL) {
+		warnx("Failed to copy parent NFSv4 ACL");
+		return (-1);
+	}
+	return (0);
+}
+
+static int
 calculate_inherited_acl(struct windows_acl_info *w, struct nfs4_acl *parent_acl, int level)
 {
 	bool ok;
+	int error, trivial;
 	struct nfs4_acl *d_acl = NULL;
 	struct nfs4_acl *f_acl = NULL;
 	d_acl = nfs4_new_acl(true);
 	if (d_acl == NULL) {
 		warnx("Failed to create new directory ACL.");
 		return (-1);
+	}
+	error = nfs4_acl_is_trivial_np(parent_acl, &trivial);
+	if (error) {
+		warnx("acl_is_trivial() failed\n");
+		return (-1);
+	}
+	if (trivial) {
+		/* If Parent ACL is trivial, then simply copy it to child */
+		return (copy_parent_entries(parent_acl, level));
 	}
 
 	ok = acl_nfs4_inherit_entries(parent_acl, d_acl, true);
@@ -912,10 +950,10 @@ calculate_inherited_acl(struct windows_acl_info *w, struct nfs4_acl *parent_acl,
 		warnx("failed to get inherited entries\n");
 		return (-1);
 	}
-	theacls[level].dacl = d_acl;
 
+	theacls[level].dacl = d_acl;
 	f_acl = nfs4_new_acl(false);
-	if (d_acl == NULL) {
+	if (f_acl == NULL) {
 		nfs4_free_acl(d_acl);
 		warnx("Failed to create new file ACL.");
 		return (-1);

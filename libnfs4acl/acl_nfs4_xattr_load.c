@@ -34,7 +34,6 @@
  */
 
 
-#include <netinet/in.h>
 #include <stdbool.h>
 #include "libacl_nfs4.h"
 #include "rpc/xdr.h"
@@ -52,11 +51,17 @@ struct nfs4_acl * acl_nfs4_xattr_load(char *xattr_v, int xattr_size, u32 is_dir)
 	nfs4_acl_type_t type;
 	nfs4_acl_flag_t flag;
 	nfs4_acl_perm_t access_mask;
-	size_t acl_size;
 	XDR xdr = {0};
 	bool ok;
 
-	if (xattr_size < sizeof(u32)) {
+
+	if (xattr_size > ACES_2_XDRSIZE(NFS41ACLMAXACES)) {
+		errno = E2BIG;
+		return NULL;
+	}
+
+	if (!XDRSIZE_IS_VALID(xattr_size)) {
+		fprintf(stderr, "xattr size: %d is invalid\n", xattr_size);
 		errno = EINVAL;
 		return NULL;
 	}
@@ -66,73 +71,69 @@ struct nfs4_acl * acl_nfs4_xattr_load(char *xattr_v, int xattr_size, u32 is_dir)
 		return NULL;
 	}
 
-	num_aces = ((xattr_size - sizeof(aclflag4) - sizeof(unsigned)) / sizeof(struct nfsace4i));
-	acl_size = sizeof(nfsacl41i) + (num_aces * sizeof(struct nfsace4i));
+	num_aces = XDRSIZE_2_ACES(xattr_size);
+	nacl = calloc(1, sizeof(nfsacl41i));
 
-	nacl = (nfsacl41i *)calloc(num_aces, acl_size);
-	if (nacl == NULL) {
-		errno = ENOMEM;
-		goto err1;
-	}
-	xdrmem_create(&xdr, bufp, acl_size, XDR_DECODE);
+	xdrmem_create(&xdr, bufp, xattr_size, XDR_DECODE);
 	ok = xdr_nfsacl41i(&xdr, nacl);
 	if (!ok) {
 		errno = ENOMEM;
-		free(nacl);
 		goto err1;
 	}
+
+	acl->aclflags4 = nacl->na41_flag;
 	for(ace_n = 0; num_aces > ace_n ; ace_n++) {
-		nfsace4i *nacep = &nacl->na41_aces.na41_aces_val[ace_n]; 
-		char who[20] = {0};
+		nfsace4i *nacep = &nacl->na41_aces.na41_aces_val[ace_n];
 		/* Get the acl type */
 		type = (nfs4_acl_type_t)nacep->type;
 		flag = (nfs4_acl_flag_t)nacep->flag;
 		access_mask = (nfs4_acl_perm_t)nacep->access_mask;
 		nfs4_acl_who_t whotype;
+		nfs4_acl_id_t id;
 
 		if (nacep->iflag & ACEI4_SPECIAL_WHO) {
 			switch(nacep->who) {
 			case ACE4_SPECIAL_OWNER:
 				whotype = NFS4_ACL_WHO_OWNER;
-				snprintf(who, sizeof(who), "%s", NFS4_ACL_WHO_OWNER_STRING);
+				id = -1;
 				break;
 			case ACE4_SPECIAL_GROUP:
 				whotype = NFS4_ACL_WHO_GROUP;
-				snprintf(who, sizeof(who), "%s", NFS4_ACL_WHO_GROUP_STRING);
+				id = -1;
 				break;
 			case ACE4_SPECIAL_EVERYONE:
 				whotype = NFS4_ACL_WHO_EVERYONE;
-				snprintf(who, sizeof(who), "%s", NFS4_ACL_WHO_EVERYONE_STRING);
+				id = -1;
 				break;
 			default:
 				fprintf(stderr, "Unknown id: 0x%08x\n", nacep->who);
 				errno = EINVAL;
-				free(nacl);
 				goto err1;
 			}
 
 		}
 		else {
 			whotype = NFS4_ACL_WHO_NAMED;
-			snprintf(who, sizeof(who), "%d", nacep->who);
+			id = nacep->who;
 		}
-		ace = nfs4_new_ace(is_dir, type, flag, access_mask, whotype, who);
+
+		ace = nfs4_new_ace(is_dir, type, flag, access_mask, whotype, id);
 		if (ace == NULL) {
-			free(nacl);
 			goto err1;
 		}
 
 		if (nfs4_append_ace(acl, ace)){
-			free(nacl);
 			goto err1;
 		}
 
 	}
-
+	free(nacl-> na41_aces.na41_aces_val);
 	free(nacl);
 	return acl;
 
 err1:
+	free(nacl-> na41_aces.na41_aces_val);
+	free(nacl);
 	nfs4_free_acl(acl);
 	return NULL;
 }

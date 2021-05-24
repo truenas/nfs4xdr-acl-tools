@@ -155,7 +155,7 @@ int nfs4_replace_ace_spec(struct nfs4_acl *acl, char *from_ace_spec, char *to_ac
 	for (orig_ace = nfs4_get_first_ace(acl); orig_ace != NULL; nfs4_get_next_ace(&orig_ace)) {
 		if (!ace_is_equal(from_ace, orig_ace)) {
 			new_ace = nfs4_new_ace(acl->is_directory, to_ace->type, to_ace->flag,
-					to_ace->access_mask, to_ace->whotype, to_ace->who);
+					to_ace->access_mask, to_ace->whotype, to_ace->who_id);
 			if (new_ace == NULL) {
 				free(from_ace);
 				free(to_ace);

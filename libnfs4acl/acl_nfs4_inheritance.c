@@ -56,9 +56,9 @@ _print_diff_aces(struct nfs4_ace *a, struct nfs4_ace *b)
 		fprintf(stderr, "access_mask: 0x%08x - 0x%08x ",
 			a->access_mask, b->access_mask);
 	}
-	if (strcmp(a->who, b->who) != 0) {
-		fprintf(stderr, "who_str: %s - %s",
-			a->who, b->who);
+	if (a->who_id != b->who_id) {
+		fprintf(stderr, "who_id: %d - %d",
+			a->who_id, b->who_id);
 	}
 	fprintf(stderr, "\n");
 }
@@ -70,7 +70,7 @@ ace_is_equal(struct nfs4_ace *entrya, struct nfs4_ace *entryb)
 	    (entrya->whotype != entryb->whotype) ||
 	    (entrya->flag != entryb->flag) ||
 	    (entrya->access_mask != entryb->access_mask) ||
-	    ((strcmp(entrya->who, entryb->who) != 0))) {
+	    (entrya->who_id != entryb->who_id)) {
 #ifdef NFS4_DEBUG
 		_print_diff_aces(entrya, entryb);
 #endif
@@ -211,7 +211,7 @@ bool acl_nfs4_inherit_entries(struct nfs4_acl *parent_aclp,
 		    ((flags && NFS4_ACE_DIRECTORY_INHERIT_ACE) == 0)) {
 			flags |= NFS4_ACE_INHERIT_ONLY_ACE;
 		}
-		new_ace = nfs4_new_ace(is_dir, type, flags, a_mask, tag, ace->who);
+		new_ace = nfs4_new_ace(is_dir, type, flags, a_mask, tag, ace->who_id);
 		if (new_ace == NULL) {
 			return false;
 		}
@@ -259,7 +259,7 @@ bool acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 		user_allow |= NFS4_ACE_READ_DATA;
 	}
 	if (mode & S_IWUSR) {
-		user_allow |= NFS4_ACE_WRITE_DATA;
+		user_allow |= NFS4_ACE_POSIX_WRITE;
 	}
 	if (mode & S_IXUSR) {
 		user_allow |= NFS4_ACE_EXECUTE;
@@ -268,7 +268,7 @@ bool acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 		group_allow |= NFS4_ACE_READ_DATA;
 	}
 	if (mode & S_IWGRP) {
-		group_allow |= NFS4_ACE_WRITE_DATA;
+		group_allow |= NFS4_ACE_POSIX_WRITE;
 	}
 	if (mode & S_IXGRP) {
 		group_allow |= NFS4_ACE_EXECUTE;
@@ -277,7 +277,7 @@ bool acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 		everyone_allow |= NFS4_ACE_READ_DATA;
 	}
 	if (mode & S_IWOTH) {
-		everyone_allow |= NFS4_ACE_WRITE_DATA;
+		everyone_allow |= NFS4_ACE_POSIX_WRITE;
 	}
 	if (mode & S_IXOTH) {
 		everyone_allow |= NFS4_ACE_EXECUTE;
@@ -289,7 +289,7 @@ bool acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 		if (user_allow_first != 0) {
 			new_ace = nfs4_new_ace(
 				is_dir, NFS4_ACE_ACCESS_ALLOWED_ACE_TYPE,
-				0, user_allow_first, NFS4_ACL_WHO_OWNER, NULL
+				0, user_allow_first, NFS4_ACL_WHO_OWNER, -1
 			);
 			if (new_ace == NULL) {
 				return false;
@@ -302,7 +302,7 @@ bool acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 		if (user_deny != 0) {
 			new_ace = nfs4_new_ace(
 				is_dir, NFS4_ACE_ACCESS_DENIED_ACE_TYPE,
-				0, user_deny, NFS4_ACL_WHO_OWNER, NULL
+				0, user_deny, NFS4_ACL_WHO_OWNER, -1
 			);
 			if (new_ace == NULL) {
 				return false;
@@ -315,8 +315,8 @@ bool acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 		if (group_deny != 0) {
 			new_ace = nfs4_new_ace(
 				is_dir, NFS4_ACE_ACCESS_DENIED_ACE_TYPE,
-				(NFS4_ACE_GROUP | NFS4_ACE_IDENTIFIER_GROUP),
-				group_deny, NFS4_ACL_WHO_GROUP, NULL
+				NFS4_ACE_IDENTIFIER_GROUP,
+				group_deny, NFS4_ACL_WHO_GROUP, -1
 			);
 			if (new_ace == NULL) {
 				return false;
@@ -336,7 +336,7 @@ bool acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 	if (!skip_mode) {
 		new_ace = nfs4_new_ace(
 			is_dir, NFS4_ACE_ACCESS_ALLOWED_ACE_TYPE,
-			0, user_allow, NFS4_ACL_WHO_OWNER, NULL
+			0, user_allow, NFS4_ACL_WHO_OWNER, -1
 		);
 		if (new_ace == NULL) {
 			return false;
@@ -348,7 +348,7 @@ bool acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 		new_ace = nfs4_new_ace(
 			is_dir, NFS4_ACE_ACCESS_ALLOWED_ACE_TYPE,
 			NFS4_ACE_IDENTIFIER_GROUP,
-			group_allow, NFS4_ACL_WHO_GROUP, NULL
+			group_allow, NFS4_ACL_WHO_GROUP, -1
 		);
 		if (new_ace == NULL) {
 			return false;
@@ -359,7 +359,7 @@ bool acl_nfs4_calculate_inherited_acl(struct nfs4_acl *parent_aclp,
 		}
 		new_ace = nfs4_new_ace(
 			is_dir, NFS4_ACE_ACCESS_ALLOWED_ACE_TYPE,
-			0, everyone_allow, NFS4_ACL_WHO_EVERYONE, NULL
+			0, everyone_allow, NFS4_ACL_WHO_EVERYONE, -1
 		);
 		if (new_ace == NULL) {
 			return false;
@@ -495,8 +495,8 @@ bool acl_nfs4_sync_mode_from_acl(mode_t *_mode, struct nfs4_acl *aclp)
 
 		default:
 #ifdef NFS4_DEBUG
-			fprintf(stderr, "whotype: %d, who: %s: READ: %s, WRITE: %s, EXEC: %s\n",
-				ace->whotype, ace->who,
+			fprintf(stderr, "whotype: %d, who: %d: READ: %s, WRITE: %s, EXEC: %s\n",
+				ace->whotype, ace->who_id,
 				ace->access_mask & NFS4_ACE_READ_DATA ? "YES" : "NO",
 				ace->access_mask & NFS4_ACE_WRITE_DATA ? "YES" : "NO",
 				ace->access_mask & NFS4_ACE_EXECUTE ? "YES" : "NO");

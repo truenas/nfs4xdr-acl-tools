@@ -41,10 +41,9 @@ struct nfs4_ace *nfs4_new_ace(int is_directory,
 			      nfs4_acl_type_t type,
 			      nfs4_acl_flag_t flag,
 			      nfs4_acl_perm_t access_mask,
-			      nfs4_acl_who_t whotype, char* who)
+			      nfs4_acl_who_t whotype, nfs4_acl_id_t id)
 {
 	struct nfs4_ace *ace = NULL;
-	int result;
 
 	ace = calloc(1, sizeof(struct nfs4_ace));
 	if (ace == NULL) {
@@ -54,6 +53,9 @@ struct nfs4_ace *nfs4_new_ace(int is_directory,
 
 	ace->type = type;
 	ace->flag = flag;
+	ace->access_mask = access_mask & NFS4_ACE_MASK_ALL;
+	ace->whotype = whotype;
+	ace->who_id = id;
 #if 0
 	/*
 	 * Original nfs4-acl-tools prevents setting DENY aces for
@@ -70,18 +72,18 @@ struct nfs4_ace *nfs4_new_ace(int is_directory,
 	if (!is_directory && (flag & NFS4_ACE_FLAGS_DIRECTORY)) {
 #if NFS4_DEBUG
 		fprintf(stderr, "Flags are invalid for a directory: 0x%08x\n",
-			flags);
+			flag);
 #endif
 		free(ace);
 		errno = EINVAL;
 		return NULL;
 	}
-	ace->access_mask = access_mask & NFS4_ACE_MASK_ALL;
 
-	result = acl_nfs4_set_who(ace, whotype, who);
-	if (result < 0) {
-		free(ace);
-		return NULL;
-	}
+#if NFS4_DEBUG
+	fprintf(stderr, "nfs4_new_ace(): type: %d, flag: 0x%08x, access_mask: 0x%08x, "
+	    "whotype: 0x%08x, id: %d\n", ace->type, ace->flag, ace->access_mask,
+	    ace->whotype, ace->who_id);
+#endif
+
 	return ace;
 }
