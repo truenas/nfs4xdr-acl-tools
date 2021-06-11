@@ -45,7 +45,7 @@ who_to_json(json_t *_parent, struct nfs4_ace *entry, bool numeric)
 
 	switch (entry->whotype) {
 	case NFS4_ACL_WHO_NAMED:
-		tag = NFS4_IS_GROUP(entry->flag) ? "group" : "user";
+		tag = NFS4_IS_GROUP(entry->flag) ? "GROUP" : "USER";
 		if (numeric) {
 			error = acl_nfs4_get_who(entry, &who_id, NULL, 0);
 			if (error) {
