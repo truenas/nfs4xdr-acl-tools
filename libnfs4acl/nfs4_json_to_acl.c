@@ -330,6 +330,7 @@ json_ace_get_flag(json_t *_jsace, int idx, nfs4_acl_flag_t *_flags, json_t *_ver
 	char *err_field = NULL;
 	void *iter;
 	int i, error;
+	bool has_inherit = false, has_io = false;
 
 	jsflagset = json_object_get(_jsace, "flags");
 	if (!json_is_object(jsflagset)) {
@@ -467,7 +468,35 @@ json_ace_get_flag(json_t *_jsace, int idx, nfs4_acl_flag_t *_flags, json_t *_ver
 			}
 			return (-EINVAL);
 		}
+		if (strcmp(key, "INHERIT_ONLY") == 0) {
+			has_io = true;
+		}
+		else if (strcmp(key, "DIRECTORY_INHERIT") == 0) {
+			has_inherit = true;
+		}
+		else if (strcmp(key, "FILE_INHERIT") == 0) {
+			has_inherit = true;
+		}
 		iter = json_object_iter_next(jsflagset, iter);
+	}
+	if (has_io && !has_inherit) {
+		err_str = strdup("INHERIT_ONLY flag requires additional "
+				 "DIRECTORY_INHERIT or FILE_INHERIT flag.");
+		if (err_str == NULL) {
+			err(EX_OSERR, "strdup() failed");
+		}
+
+		error = asprintf(&err_field, "acl.%d.flags", idx);
+		if (error == -1) {
+			err(EX_OSERR, "asprintf() failed");
+		}
+
+		error = json_verrors_append(_verrors, err_field, err_str);
+		if (error) {
+			return (error);
+		}
+		return (-EINVAL);
+
 	}
 	*_flags = flagset;
 	return (0);
