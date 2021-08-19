@@ -867,10 +867,6 @@ set_acls(struct windows_acl_info *w)
 		switch (entry->fts_info) {
 		case FTS_D:
 		case FTS_F:
-			if (w->root_dev == entry->fts_statp->st_dev) {
-				warnx("%s: path resides in boot pool", entry->fts_path);
-				return -1;
-			}
 			rval = do_action(w, tree, entry, (w->flags & WA_OP_SET));
 			break;
 
