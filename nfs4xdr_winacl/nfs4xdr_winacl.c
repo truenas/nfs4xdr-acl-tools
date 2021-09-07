@@ -719,7 +719,13 @@ do_action(struct windows_acl_info *w, FTS *ftsp, FTSENT *entry, int action)
 		rval = IS_POSIXACL(w->flags) ?
 		       remove_acl_posix(w, entry) :
 		       strip_acl(w, entry);
-		if ((rval != 0) && (errno == EOPNOTSUPP) && MAY_XDEV(w->flags)) {
+
+		if ((rval != 0) && (errno == EOPNOTSUPP) &&
+		    (strcmp(entry->fts_accpath, ".zfs") == 0)) {
+			fts_set(ftsp, entry, FTS_SKIP);
+			rval = 0;
+		}
+		else if ((rval != 0) && (errno == EOPNOTSUPP) && MAY_XDEV(w->flags)) {
 			rval = IS_POSIXACL(w->flags) ?
 				strip_acl(w, entry) :
 				remove_acl_posix(w, entry);
@@ -754,7 +760,12 @@ do_action(struct windows_acl_info *w, FTS *ftsp, FTSENT *entry, int action)
 		rval = IS_POSIXACL(w->flags) ?
 		       set_acl_posix(w, entry) :
 		       set_acl(w, entry);
-		if ((rval != 0) && (errno == EOPNOTSUPP) && !IS_POSIXACL(w->flags)) {
+		if ((rval != 0) && (errno == EOPNOTSUPP) &&
+		    (strcmp(entry->fts_accpath, ".zfs") == 0)) {
+			fts_set(ftsp, entry, FTS_SKIP);
+			rval = 0;
+		}
+		else if ((rval != 0) && (errno == EOPNOTSUPP) && !IS_POSIXACL(w->flags)) {
 			fts_set(ftsp, entry, FTS_SKIP);
 			warnx("%s: path does not support NFSv4 ACLs. Skipping.",
 			      entry->fts_path);
@@ -867,10 +878,6 @@ set_acls(struct windows_acl_info *w)
 		switch (entry->fts_info) {
 		case FTS_D:
 		case FTS_F:
-			if (w->root_dev == entry->fts_statp->st_dev) {
-				warnx("%s: path resides in boot pool", entry->fts_path);
-				return -1;
-			}
 			rval = do_action(w, tree, entry, (w->flags & WA_OP_SET));
 			break;
 
