@@ -449,6 +449,10 @@ set_acl_posix(struct windows_acl_info *w, FTSENT *file)
 		fprintf(stdout, "%s\n", file->fts_path);
 	}
 
+	if (file->fts_level == FTS_ROOTLEVEL) {
+		return (0);
+	}
+
 	if (!posixacl && MAY_CHMOD(w->flags)) {
 		error = remove_acl_posix(w, file);
 		if (error) {
