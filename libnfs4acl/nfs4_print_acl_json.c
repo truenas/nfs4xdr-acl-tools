@@ -87,7 +87,7 @@ nfs4_print_acl_json(char *path, int flags)
 
 	error = json_object_set_new(json_acl,
 	    "gid",
-	    json_integer(st.st_uid));
+	    json_integer(st.st_gid));
 	if (error) {
 		json_decref(json_acl);
 		warnx("failed to add gid to JSON output");
