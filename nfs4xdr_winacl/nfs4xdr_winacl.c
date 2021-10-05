@@ -436,7 +436,7 @@ remove_acl_posix(struct windows_acl_info *w, FTSENT *file)
 		}
 	}
 
-	return (error);
+	return (0);
 }
 
 static int
