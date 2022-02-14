@@ -3,7 +3,7 @@
 .\" 
 .TH NFS4_ACL 5 "version 0.3.3, August 2008" "Linux" "NFSv4 Access Control Lists"
 .SH NAME
-nfs4_acl \- NFSv4 Access Control Lists
+nfs4xdr_acl \- NFSv4 Access Control Lists
 .SH DESCRIPTION
 
 An ACL is a list of permissions associated with a file or directory and 
@@ -310,7 +310,7 @@ Because NFSv4 ACLs are "default-deny", the use of Deny ACEs can (and should)
 be avoided entirely in most cases.  
 .SH AUTHORS
 Tools for viewing and manipulating NFSv4 ACLs, 
-.BR nfs4_getfacl " and " nfs4_setfacl ,
+.BR nfs4xdr_getfacl " and " nfs4xdr_setfacl ,
 were written by people at CITI, the Center for Information Technology Integration
 .RI ( http://www.citi.umich.edu ).
 This manpage was written by David Richter and J. Bruce Fields.
@@ -318,5 +318,5 @@ This manpage was written by David Richter and J. Bruce Fields.
 Please send bug reports, feature requests, and comments to
 .RI < nfsv4@linux-nfs.org >.
 .SH SEE ALSO
-.BR nfs4_getfacl "(1), " nfs4_setacl (1), 
+.BR nfs4xdr_getfacl "(1), " nfs4xdr_setacl (1),
 .IR RFC3530 " (NFSv4.0), NFSv4.1 Minor Version Draft."
