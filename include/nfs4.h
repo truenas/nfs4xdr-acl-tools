@@ -81,6 +81,8 @@ enum nfs4_acl_whotype {
 #define ACL_PROTECTED                                   0x0002
 #define ACL_DEFAULTED                                   0x0004
 #define ACL_FLAGS_ALL   (ACL_AUTO_INHERIT|ACL_PROTECTED|ACL_DEFAULTED)
+#define ACL_IS_TRIVIAL					0x10000
+#define ACL_IS_DIR					0x20000
 
 /*
  * this is my best guess about the principal name -- there are a lot of different
