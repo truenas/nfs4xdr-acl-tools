@@ -561,19 +561,10 @@ struct nfs4_acl *acl_nfs4_strip(struct nfs4_acl *acl)
  */
 int nfs4_acl_is_trivial_np(struct nfs4_acl *acl, int *trivialp)
 {
-	struct nfs4_acl *stripped = NULL;
-	bool is_equal;
-
 	if (acl == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
-	stripped = acl_nfs4_strip(acl);
-	if (stripped == NULL) {
-		return -1;
-	}
-	is_equal = aces_are_equal(acl, stripped);
-	nfs4_free_acl(stripped);
-	*trivialp = (is_equal) ? 1 : 0;
+	*trivialp = acl->aclflags4 & ACL_IS_TRIVIAL ? 1 : 0;
 	return 0;
 }
