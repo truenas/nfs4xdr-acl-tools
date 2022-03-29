@@ -75,6 +75,8 @@ struct nfs4_acl * acl_nfs4_copy_acl(struct nfs4_acl * acl)
 		nfs4_get_next_ace(&ace);
 		nace++;
 	}
+	// preserve TRIVIAL flag on copying ACL
+	new_acl->aclflags4 = acl->aclflags4 & ACL_IS_TRIVIAL;
 
 	return new_acl;
 
