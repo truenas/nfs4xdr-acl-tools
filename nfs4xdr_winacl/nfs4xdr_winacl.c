@@ -413,7 +413,7 @@ remove_acl_posix(struct windows_acl_info *w, FTSENT *file)
 	if (S_ISDIR(file->fts_statp->st_mode)) {
 		error = removexattr(file->fts_accpath,
 				    "system.posix_acl_default");
-		if (error && errno != ENODATA) {
+		if (error && ((errno != ENODATA) && (errno != EOPNOTSUPP))) {
 			warnx("%s: removexattr() for default ACL "
 			      "failed: %s", file->fts_accpath, strerror(errno));
 			return (error);
@@ -422,7 +422,7 @@ remove_acl_posix(struct windows_acl_info *w, FTSENT *file)
 
 	error = removexattr(file->fts_accpath,
 			    "system.posix_acl_access");
-	if (error && errno != ENODATA) {
+	if (error && ((errno != ENODATA) && (errno != EOPNOTSUPP))) {
 		warnx("%s: removexattr() for access ACL "
 		      "failed: %s", file->fts_accpath, strerror(errno));
 		return (error);
