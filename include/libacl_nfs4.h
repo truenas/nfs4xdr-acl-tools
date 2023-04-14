@@ -82,18 +82,21 @@
  * is probably a reasonable guess.
  */
 /* Fixme: This value is used for buffer allocation when reading from spec file */
+#define ACE4ELEM                5
+#define ACE4SIZE                (ACE4ELEM * sizeof (u32))
+#define ACLBASESZ		(2 * sizeof (u32))
 #define NFS4_MAX_ACLSIZE	(65536)
 
 #define NFS41ACLMAXACES		(128)
-#define	ACES_2_XDRSIZE(naces) 	((sizeof(u_int) * 2) + (naces * sizeof(nfsace4i)))
-#define XDRSIZE_2_ACES(sz)	((sz - (sizeof(u_int) * 2)) / sizeof(nfsace4i))
-#define XDRSIZE_IS_VALID(sz)	((sz >= ((sizeof(u_int) * 2) + sizeof(nfsace4i))) && \
-				(((sz - (sizeof(u_int) * 2)) % sizeof(nfsace4i)) == 0))
+#define ACES_2_XDRSIZE(naces) 	(ACLBASESZ + (naces * ACE4SIZE))
+#define XDRSIZE_2_ACES(sz)	((sz - ACLBASESZ) / ACE4SIZE)
+#define XDRSIZE_IS_VALID(sz)	((sz >= (ACLBASESZ + ACE4SIZE)) && \
+				(((sz - ACLBASESZ) % ACE4SIZE) == 0))
 
-#define ACES_2_ACLSIZE(naces)	(sizeof(nfsacl41i) + (naces * sizeof(nfsace4i)))
-#define ACLSIZE_2_ACES(sz)	((sz - (sizeof(nfsacl41i))) / sizeof(nfsace4i))
-#define ACLSIZE_IS_VALID(sz)	((sz >= (sizeof(nfsacl41i) + sizeof(nfsace4i))) && \
-				(((sz - sizeof(nfsacl41i)) % sizeof(nfsace4i) == 0)))
+#define ACES_2_ACLSIZE(naces)	(ACLBASESZ + (naces * ACE4SIZE))
+#define ACLSIZE_2_ACES(sz)	((sz - ACLBASESZ) / ACE4SIZE)
+#define ACLSIZE_IS_VALID(sz)	((sz >= (ACLBASESZ + ACE4SIZE)) && \
+				(((sz - ACLBASESZ) % ACE4SIZE == 0)))
 
 /*
  * There is an option to compile with a different xattr name.

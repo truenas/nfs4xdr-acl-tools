@@ -36,7 +36,6 @@
 #include <err.h>
 #include <unistd.h>
 #include <stdio.h>
-#include "nfs41acl.h"
 #include "libacl_nfs4.h"
 
 
