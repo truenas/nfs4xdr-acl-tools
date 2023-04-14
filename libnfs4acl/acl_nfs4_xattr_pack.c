@@ -33,90 +33,82 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <rpc/xdr.h>
 #include "libacl_nfs4.h"
-#include "nfs41acl.h"
 #include <stdio.h>
 #include <stdbool.h>
-#include <assert.h>
+#include <arpa/inet.h>
 
+static bool
+nfs4ace_to_buf(u32 *xattrbuf, struct nfs4_ace *ace)
+{
+	u32 who = 0, iflag = 0;
+
+	switch(ace->whotype) {
+	case NFS4_ACL_WHO_OWNER:
+		iflag = ACEI4_SPECIAL_WHO;
+		who = ACE4_SPECIAL_OWNER;
+		break;
+	case NFS4_ACL_WHO_GROUP:
+		iflag = ACEI4_SPECIAL_WHO;
+		who = ACE4_SPECIAL_GROUP;
+		break;
+	case NFS4_ACL_WHO_EVERYONE:
+		iflag = ACEI4_SPECIAL_WHO;
+		who = ACE4_SPECIAL_EVERYONE;
+		break;
+	case NFS4_ACL_WHO_NAMED:
+		iflag = 0;
+		who = ace->who_id;
+	}
+
+	*xattrbuf++ = htonl(ace->type);
+	*xattrbuf++ = htonl(ace->flag);
+	*xattrbuf++ = htonl(iflag);
+	*xattrbuf++ = htonl(ace->access_mask);
+	*xattrbuf++ = htonl(who);
+
+	return true;
+}
+
+static bool
+nfs4acl_to_buf(u32 *xattrbuf, struct nfs4_acl *acl)
+{
+	struct nfs4_ace *ace = NULL;
+
+	*xattrbuf++ = htonl(acl->aclflags4);
+	*xattrbuf++ = htonl(acl->naces);
+
+	for (ace = nfs4_get_first_ace(acl); ace != NULL;
+	     ace = nfs4_get_next_ace(&ace), xattrbuf += ACE4ELEM) {
+		if (!nfs4ace_to_buf(xattrbuf, ace)) {
+			return false;
+		}
+        }
+
+	return true;
+}
 
 size_t acl_nfs4_xattr_pack(struct nfs4_acl * acl, char** bufp)
 {
-	struct nfs4_ace *ace = NULL;
-	nfsacl41i *nacl = NULL;
-	int i;
-	XDR xdr = {0};
-	bool ok;
-	size_t acl_size = 0, xdr_size = 0;
+	char *buf = NULL;
+	size_t acl_size = 0;
 	
 	if (acl == NULL || bufp == NULL) {
 		errno = EINVAL;
-		goto failed;
+		return -1;
 	}
 
 	acl_size = ACES_2_ACLSIZE(acl->naces);
-	xdr_size = ACES_2_XDRSIZE(acl->naces);
-	nacl = calloc(1, acl_size);
-	if (nacl == NULL) {
-		errno = ENOMEM;
-		goto failed;
+	buf = calloc(1, acl_size);
+	if (buf == NULL) {
+		return -1;
 	}
 
-	*bufp = (char*) calloc(1, acl_size);
-	if (*bufp == NULL) {
-		errno = ENOMEM;
-		goto failed;
+	if (!nfs4acl_to_buf((u32 *)buf, acl)) {
+		free(buf);
+		return -1;
 	}
-	nacl->na41_aces.na41_aces_len = acl->naces;
-	nacl->na41_flag = acl->aclflags4;
-	nacl->na41_aces.na41_aces_val = (nfsace4i *)((char *)nacl + sizeof(nfsacl41i));	
-	for (ace = nfs4_get_first_ace(acl), i = 0; ace != NULL;
-	     ace = nfs4_get_next_ace(&ace), i++) {
-		assert(i < acl->naces);
 
-		nfsace4i *nacep = &nacl->na41_aces.na41_aces_val[i];
-		nacep->type = ace->type;
-		nacep->flag = ace->flag;
-		nacep->access_mask = ace->access_mask;
-
-		switch(ace->whotype) {
-		case NFS4_ACL_WHO_OWNER:
-			nacep->iflag |= ACEI4_SPECIAL_WHO;
-			nacep->who = ACE4_SPECIAL_OWNER;
-			break;
-		case NFS4_ACL_WHO_GROUP:
-			nacep->iflag |= ACEI4_SPECIAL_WHO;
-			nacep->who = ACE4_SPECIAL_GROUP;
-			break;
-		case NFS4_ACL_WHO_EVERYONE:
-			nacep->iflag |= ACEI4_SPECIAL_WHO;
-			nacep->who = ACE4_SPECIAL_EVERYONE;
-			break;
-		case NFS4_ACL_WHO_NAMED:
-			nacep->iflag = 0;
-			nacep->who = ace->who_id;
-		}
-#ifdef NFS4_DEBUG
-		fprintf(stderr, "who: 0x%08x, iflag: 0x%08x, type: 0x%08x "
-			"access_mask: 0x%08x, flags: 0x%08x\n",
-			nacep->who, nacep->iflag, nacep->type,
-			nacep->access_mask, nacep->flag);
-#endif
-	}
-        xdrmem_create(&xdr, *bufp, xdr_size, XDR_ENCODE);
-	ok = xdr_nfsacl41i(&xdr, nacl);
-	if (!ok) {
-		free(nacl);
-		goto free_failed;
-	}
-	free(nacl);
-	return xdr_size;
-
-free_failed:
-	free(*bufp);
-	*bufp = NULL;
-
-failed:
-	return -1;
+	*bufp = buf;
+	return acl_size;
 }

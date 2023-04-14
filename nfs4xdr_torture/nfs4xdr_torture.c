@@ -38,7 +38,6 @@
 #include <sys/random.h>
 #include <sys/xattr.h>
 #include <time.h>
-#include "nfs41acl.h"
 #include "torture.h"
 
 static void usage(int);

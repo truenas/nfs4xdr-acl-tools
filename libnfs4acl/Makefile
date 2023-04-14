@@ -96,7 +96,6 @@ LIBACL_NFS4_CFILES = \
 	nfs4_remove_file_aces.c \
 	nfs4_remove_string_aces.c \
 	nfs4_set_acl.c \
-	nfs41acl_xdr.c \
 	nfs4_ace_to_text_bsd.c \
 	nfs4_ace_to_json.c \
 	nfs4_ace_from_text_bsd.c \
