@@ -47,6 +47,7 @@ static const struct {
 	{ ACL_PROTECTED, "protected" },
 	{ ACL_DEFAULTED, "defaulted" },
 	{ 0, "none" },
+	{ 0, NULL },
 };
 
 bool
@@ -54,16 +55,19 @@ nfs4_aclflag_from_text(char *flags, nfs4_acl_aclflags_t *_flags4p)
 {
 	int flags4p = 0, i, mapped;
 	char *field = NULL;
+	bool found;
 
 	while ((field = strsep(&flags, ",")) != NULL) {
+		found = false;
 		mapped = 0;
-		for (i = 0; acl_flag_str[i].flag != 0; i++) {
+		for (i = 0; acl_flag_str[i].flagstr != NULL; i++) {
 			if (strcmp(field, acl_flag_str[i].flagstr) == 0) {
 				mapped = acl_flag_str[i].flag;
 				flags4p |= acl_flag_str[i].flag;
+				found = true;
 			}
 		}
-		if (!mapped) {
+		if (!found) {
 			warnx("%s: invalid aclflag", field);
 			errno = EINVAL;
 			return (false);
