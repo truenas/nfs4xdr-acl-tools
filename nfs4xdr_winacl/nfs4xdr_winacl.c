@@ -450,6 +450,13 @@ set_acl_posix(struct windows_acl_info *w, FTSENT *file)
 	}
 
 	if (file->fts_level == FTS_ROOTLEVEL) {
+		if (w->uid != -1 || w->gid != -1) {
+			error = chown(file->fts_accpath, w->uid, w->gid);
+			if (error) {
+				warn("%s: chown() failed", file->fts_accpath);
+				return (-1);
+			}
+		}
 		return (0);
 	}
 
