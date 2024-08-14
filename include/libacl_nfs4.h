@@ -85,9 +85,9 @@
 #define ACE4ELEM                5
 #define ACE4SIZE                (ACE4ELEM * sizeof (u32))
 #define ACLBASESZ		(2 * sizeof (u32))
-#define NFS4_MAX_ACLSIZE	(65536)
 
-#define NFS41ACLMAXACES		(128)
+#define NFS41ACLMAXACES		(1024)
+#define NFS4_MAX_ACLSIZE	(NFS41ACLMAXACES * NFS4_MAX_ACESIZE)
 #define ACES_2_XDRSIZE(naces) 	(ACLBASESZ + (naces * ACE4SIZE))
 #define XDRSIZE_2_ACES(sz)	((sz - ACLBASESZ) / ACE4SIZE)
 #define XDRSIZE_IS_VALID(sz)	((sz >= (ACLBASESZ + ACE4SIZE)) && \
