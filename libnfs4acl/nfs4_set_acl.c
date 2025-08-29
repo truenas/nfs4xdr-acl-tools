@@ -32,7 +32,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/errno.h>
-#include <attr/xattr.h>
+#include <sys/xattr.h>
 #include <err.h>
 #include <unistd.h>
 #include <stdio.h>
