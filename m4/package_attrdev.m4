@@ -1,8 +1,8 @@
 AC_DEFUN([AC_PACKAGE_NEED_ATTR_XATTR_H],
-  [ AC_CHECK_HEADERS([attr/xattr.h])
-    if test "$ac_cv_header_attr_xattr_h" != "yes"; then
+  [ AC_CHECK_HEADERS([sys/xattr.h])
+    if test "$ac_cv_header_sys_xattr_h" != "yes"; then
         echo
-        echo 'FATAL ERROR: attr/xattr.h does not exist.'
+        echo 'FATAL ERROR: sys/xattr.h does not exist.'
         echo 'Install the extended attributes (attr) development package.'
         echo 'Alternatively, run "make install-lib" from the attr source.'
         exit 1
